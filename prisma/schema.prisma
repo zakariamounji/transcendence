@@ -60,7 +60,7 @@ enum Language {
 }
 
 model User {
-  uid        String   @id @unique @default(uuid())
+  uid        String   @id @default(uuid())
 
   fullName String @default("Anonymous")
   email      String   @unique
