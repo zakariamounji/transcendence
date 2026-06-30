@@ -1,0 +1,13 @@
+NEST:
+    NestJS is built around one core idea: every piece of your app is organized into modules. Each module has three kinds of files:
+        * Controller -> receives HTTP requests, sends responses
+        * Service -> contains the actual business logic (functions-like)
+        * Module -> wires the controller and service together
+    /src Files explained:
+        * main.ts: The very first file that runs. It boots up the entire application, creates the NestJS app, sets the port, and starts listening for requests.
+                   You only have one of these in the whole project.
+        * app.module.ts: The root of the entire app, contains all the modules, controllers, and services, NestJS reads this file to know the app's structure.
+        * app.controller.ts: Handles incoming HTTP requests. Defines your routes like: GET /, POST /users etc. It does not contain logic,
+                             it just receives the request and calls the service.
+        * app.service.ts: contains the actual logic (functions) that the controller calls.
+        * app.controller.spec.ts: contains tests for the controller, i will ignore this file for now, as i am not able yet to write tests.

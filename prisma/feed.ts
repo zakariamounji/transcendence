@@ -1,8 +1,4 @@
-import { UserRole, UserStatus } from '../generated/prisma/client';
-import { faker } from '@faker-js/faker';
 import { prisma } from 'lib/prisma';
-
-const USERS_COUNT = 2;
 
 async function seedUsers() {
   console.log('Deleting users...');
