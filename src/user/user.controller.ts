@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Put, Query, Body, Param} from '@nestjs/common';
+import { Controller, Get, Post, Put, Query, Body, Param, ParseIntPipe, UseGuards} from '@nestjs/common';
 import { UserService } from './user.service';
 import type { User } from './user.service'
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { RoleGuard } from 'src/guards/role.guard';
 
 @Controller('user')
 export class UserController {
@@ -18,7 +19,7 @@ export class UserController {
     }
 
     @Get(':id')
-    findOneUser(@Param('id') id: string): User | undefined {
+    findOneUser(@Param('id', ParseIntPipe) id: number): User{
         return this.userService.findOneUser(id);
     }
 
@@ -28,6 +29,7 @@ export class UserController {
     }
 
     @Put(':id')
+    // @UseGuards(RoleGuard) // hna kan3iyt l guard li kay checki role dyal user
     updateUser (@Param('id') id: string, @Body() dto: UpdateUserDto): User | undefined {
         return this.userService.updateUser(id, dto);
     }

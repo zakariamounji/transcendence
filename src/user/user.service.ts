@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserLogger } from './user.logger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { prisma } from 'lib/prisma';
 
 export interface User {
     id: number;
@@ -14,6 +15,7 @@ export interface User {
 export class UserService {
     constructor(private readonly userLogger: UserLogger) {}
 
+    
     private users: User[] = [
         {id: 1, name: 'John Doe', email: 'john.doe@example.com'},
         {id: 2, name: 'Jane Smith', email: 'jane.smith@example.com'}
@@ -31,9 +33,12 @@ export class UserService {
     }
 
     //find a user by id
-    findOneUser (id: string): User | undefined {
+    findOneUser (id: number): User{
         this.userLogger.log('Fetching user with id: ' + id);
-        return this.users.find(user => user.id === Number(id));
+        const user = this.users.find(user => user.id === id);
+        if (!user)
+            throw new NotFoundException('user not found');
+        return user;
     }
 
     // create a new user
@@ -45,7 +50,7 @@ export class UserService {
     }
 
     updateUser(id: string, dto: UpdateUserDto): User | undefined {
-        const user = this.findOneUser(id);
+        const user = this.findOneUser(Number(id));
         if (user) {
             user.name = dto.name ?? user.name;
             user.email = dto.email ?? user.email;
