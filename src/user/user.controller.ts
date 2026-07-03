@@ -4,7 +4,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RoleGuard } from 'src/guards/role.guard';
-import { User } from 'generated/prisma/client';
+import { User } from '@prisma/client';
 
 @Controller('user')
 export class UserController {

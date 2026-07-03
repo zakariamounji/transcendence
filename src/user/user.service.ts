@@ -2,10 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserLogger } from './user.logger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PrismaClient } from '@prisma/client'
-import { User } from 'generated/prisma/client';
+// import { PrismaClient } from '@prisma/client'
+import { User } from '@prisma/client';
+import { DatabaseService } from 'src/database/database.service';
 
-import { PrismaService } from './prisma.service';
+// import { PrismaService } from './prisma.service';
 // import { User, Prisma } from 'generated/prisma';
 
 // const prisma = new PrismaClient();
@@ -19,7 +20,7 @@ import { PrismaService } from './prisma.service';
 
 @Injectable()
 export class UserService {
-    constructor(private readonly userLogger: UserLogger, private prisma: PrismaService) {}
+    constructor(private readonly userLogger: UserLogger, private readonly databaseService: DatabaseService) {}
     // private users: User[] = [
     //     {id: 1, name: 'John Doe', email: 'john.doe@example.com'},
     //     {id: 2, name: 'Jane Smith', email: 'jane.smith@example.com'}
@@ -29,7 +30,7 @@ export class UserService {
     async getUsers (n?: string): Promise<User[]> {
         if (n) {
             this.userLogger.log('Fetching users with name: ' + n);
-            return await this.prisma.user.findMany({
+            return await this.databaseService.user.findMany({
                 where: {
                     fullName: {
                         contains: n,
@@ -39,14 +40,14 @@ export class UserService {
             });
         } else {
             this.userLogger.log('Fetching all users');
-            return await this.prisma.user.findMany()
+            return await this.databaseService.user.findMany()
         }
     }
 
     //find a user by id
     async findOneUser (id: string): Promise<User>{
         this.userLogger.log('Fetching user with id: ' + id);
-        const user = await this.prisma.user.findUnique({
+        const user = await this.databaseService.user.findUnique({
             where: { uid: id }
         });
         if (!user)
@@ -56,7 +57,7 @@ export class UserService {
 
     // create a new user
     async createUser(dto: CreateUserDto): Promise<User> {
-        const newUser = await this.prisma.user.create({
+        const newUser = await this.databaseService.user.create({
             data: {
                 fullName: dto.name,
                 email: dto.email,
@@ -70,7 +71,7 @@ export class UserService {
     async updateUser(id: string, dto: UpdateUserDto): Promise<User> {
         const user = await this.findOneUser(id);
         if (user) {
-            await this.prisma.user.update({
+            await this.databaseService.user.update({
                 where: { uid: id },
                 data: {
                     fullName: dto.name ?? undefined,
