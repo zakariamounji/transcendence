@@ -2,62 +2,86 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserLogger } from './user.logger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { prisma } from 'lib/prisma';
+import { PrismaClient } from '@prisma/client'
+import { User } from 'generated/prisma/client';
 
-export interface User {
-    id: number;
-    name: string;
-    email: string
-}
+import { PrismaService } from './prisma.service';
+// import { User, Prisma } from 'generated/prisma';
+
+// const prisma = new PrismaClient();
+
+// export interface User {
+//     id: number;
+//     name: string;
+//     email: string
+// }
 
 
 @Injectable()
 export class UserService {
-    constructor(private readonly userLogger: UserLogger) {}
-
-    
-    private users: User[] = [
-        {id: 1, name: 'John Doe', email: 'john.doe@example.com'},
-        {id: 2, name: 'Jane Smith', email: 'jane.smith@example.com'}
-    ];
+    constructor(private readonly userLogger: UserLogger, private prisma: PrismaService) {}
+    // private users: User[] = [
+    //     {id: 1, name: 'John Doe', email: 'john.doe@example.com'},
+    //     {id: 2, name: 'Jane Smith', email: 'jane.smith@example.com'}
+    // ];
 
     // find all users or filter by name
-    getUsers(n?: string): User[] {
+    async getUsers (n?: string): Promise<User[]> {
         if (n) {
             this.userLogger.log('Fetching users with name: ' + n);
-            return this.users.filter(user => user.name === n);
+            return await this.prisma.user.findMany({
+                where: {
+                    fullName: {
+                        contains: n,
+                        mode: 'insensitive'
+                    }
+                }
+            });
         } else {
             this.userLogger.log('Fetching all users');
-            return this.users;
+            return await this.prisma.user.findMany()
         }
     }
 
     //find a user by id
-    findOneUser (id: number): User{
+    async findOneUser (id: string): Promise<User>{
         this.userLogger.log('Fetching user with id: ' + id);
-        const user = this.users.find(user => user.id === id);
+        const user = await this.prisma.user.findUnique({
+            where: { uid: id }
+        });
         if (!user)
             throw new NotFoundException('user not found');
         return user;
     }
 
     // create a new user
-    createUser(dto: CreateUserDto): User {
-        const newUser: User = { id: this.users.length + 1, name: dto.name, email: dto.email };
-        this.users.push(newUser);
+    async createUser(dto: CreateUserDto): Promise<User> {
+        const newUser = await this.prisma.user.create({
+            data: {
+                fullName: dto.name,
+                email: dto.email,
+                password: dto.password
+            }
+        });
         this.userLogger.log('Created new user: ' + JSON.stringify(newUser));
         return newUser;
     }
 
-    updateUser(id: string, dto: UpdateUserDto): User | undefined {
-        const user = this.findOneUser(Number(id));
+    async updateUser(id: string, dto: UpdateUserDto): Promise<User> {
+        const user = await this.findOneUser(id);
         if (user) {
-            user.name = dto.name ?? user.name;
-            user.email = dto.email ?? user.email;
+            await this.prisma.user.update({
+                where: { uid: id },
+                data: {
+                    fullName: dto.name ?? undefined,
+                    email: dto.email ?? undefined,
+                    password: dto.password ?? undefined
+                }
+            });
             this.userLogger.log('Updated user: ' + JSON.stringify(user));
             return user;
         }
         this.userLogger.log('User with id ' + id + ' not found for update');
-        return undefined;
+        throw new NotFoundException('user not found');
     }
 }
