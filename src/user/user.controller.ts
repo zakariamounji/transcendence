@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from 'src/common/dto/create-register.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from '@prisma/client';
 
@@ -8,11 +8,11 @@ import { User } from '@prisma/client';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  @HttpCode(HttpStatus.CREATED) // 201 -> Created = user created (post request succeeded)
-  create(@Body() createUserDto: CreateUserDto): Promise<User> {
-    return this.userService.create(createUserDto);
-  }
+  // @Post()
+  // @HttpCode(HttpStatus.CREATED) // 201 -> Created = user created (post request succeeded)
+  // create(@Body() createUserDto: CreateUserDto): Promise<User> {
+  //   return this.userService.create(createUserDto);
+  // }
 
   @Get()
   @HttpCode(HttpStatus.OK) // 200 -> OK = get succeeded
@@ -33,7 +33,7 @@ export class UserController {
   }
 
   @Delete(':uid')
-  @HttpCode(HttpStatus.NO_CONTENT) // 204 -> No body = delete succesded
+  @HttpCode(HttpStatus.OK) // 200 -> OK = delete succeeded
   remove(@Param('uid') uid: string): Promise<void> {
     return this.userService.remove(uid);
   }

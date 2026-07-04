@@ -1,32 +1,33 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from 'src/common/dto/create-register.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { DatabaseService } from 'src/database/database.service';
 import { User } from '@prisma/client'
+// import * as bcrypt from 'bcrypt'; // hashing library for password hashing and comparison
 
 @Injectable()
 export class UserService {
   constructor(private readonly databaseService: DatabaseService) {}
+  // async create(createUserDto: CreateUserDto): Promise<User> {
+  //   try {
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    try {
-
-      return await this.databaseService.user.create({
-        data: {
-          fullName: createUserDto.fullName,
-          email: createUserDto.email,
-          password: createUserDto.password,
-        }
-      });
-    }
-    catch (error) {
-      if (error.code === 'P2002') {
-        // p2002 is a prisma error code that indicates a unique constraint violation, which means the email is already in use.
-        throw new ConflictException ('Email already in use!');
-      }
-      throw new BadRequestException ('Failed to create user!');
-    }
-  }
+  //     const hashedPassword = await bcrypt.hash(createUserDto.password, 10); // hash the password before storing it in the database
+  //     return await this.databaseService.user.create({
+  //       data: {
+  //         fullName: createUserDto.fullName,
+  //         email: createUserDto.email,
+  //         password: hashedPassword,
+  //       }
+  //     });
+  //   }
+  //   catch (error) {
+  //     if (error.code === 'P2002') {
+  //       // p2002 is a prisma error code that indicates a unique constraint violation, which means the email is already in use.
+  //       throw new ConflictException ('Email already in use!');
+  //     }
+  //     throw new BadRequestException ('Failed to create user!');
+  //   }
+  // }
 
 
   async findAll(): Promise<User[]> {
