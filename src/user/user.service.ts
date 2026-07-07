@@ -36,7 +36,7 @@ export class UserService {
 
   async findOne(uid: string): Promise<User> {
     const user =  await this.databaseService.user.findUnique({
-      where: {uid}
+      where: {id: uid}
     });
     if (!user)
         throw new NotFoundException ('User not found!');
@@ -47,11 +47,10 @@ export class UserService {
     await this.findOne(uid);
     
     return await this.databaseService.user.update({
-      where: { uid },
+      where: { id: uid },
       data: {
         fullName: updateUserDto.fullName,
         email:    updateUserDto.email,
-        password: updateUserDto.password,
       }
     });
   }
@@ -60,7 +59,7 @@ export class UserService {
     await this.findOne(uid);
 
     await this.databaseService.user.delete({
-      where: { uid },
+      where: { id: uid },
     });
   }
 }

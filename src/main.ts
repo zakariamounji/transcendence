@@ -5,7 +5,7 @@ import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 import { TranformInterceptor } from './interceptors/tranform.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {bodyParser: false}); // required for better auth
 
   app.useGlobalPipes(new ValidationPipe()); // enables decorators like @IsString() to actually validate the data in the DTOs,
   //  without this, the decorators would not have any effect and the data would not be validated.
