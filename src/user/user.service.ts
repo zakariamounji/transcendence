@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { DatabaseService } from "src/database/database.service";
 import { UpdateProfileDto } from "./dto/updateProfile.dto";
+import { UserStatus } from "@prisma/client";
 
 @Injectable()
 export class UserService {
@@ -18,7 +19,7 @@ export class UserService {
     return this.db.user.update({ where: { id }, data });
   }
 
-  updateStatus(id: string, status: "ONLINE" | "OFFLINE" | "IN_BATTLE") {
+  updateStatus(id: string, status: UserStatus) {
     return this.db.user.update({ where: { id }, data: { status, lastSeen: new Date() } });
   }
 
