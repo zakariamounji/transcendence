@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Auth Test Page</title>
+  <style>
+    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin: 20px; }
+    .col { display:flex; gap:16px; }
+    .card { border:1px solid #ddd; padding:16px; border-radius:8px; width:360px; }
+    input, button, textarea { width:100%; padding:8px; margin:6px 0; box-sizing:border-box; }
+    label { font-weight:600; display:block; margin-top:8px; }
+    .small { font-size:13px; color:#666; }
+    pre { background:#f7f7f7; padding:12px; border-radius:6px; max-height:300px; overflow:auto }
+  </style>
+</head>
+<body>
+  <h2>Auth Test Page (better-auth)</h2>
+  <p class="small">Use this page to test sign-up/sign-in/sign-out/get-session for your NestJS + better-auth backend. Edit endpoints below if you changed better-auth's basePath.</p>
+
+  <div class="col">
+    <div class="card">
+      <label>Base URL</label>
+      <input id="baseUrl" placeholder="http://localhost:3000" value="http://localhost:3000" />
+
+      <label>Sign-up endpoint</label>
+      <input id="registerEndpoint" value="/api/auth/sign-up/email" />
+
+      <label>Sign-in endpoint</label>
+      <input id="loginEndpoint" value="/api/auth/sign-in/email" />
+
+      <label>Sign-out endpoint</label>
+      <input id="logoutEndpoint" value="/api/auth/sign-out" />
+
+      <label>Get-session endpoint</label>
+      <input id="getUserEndpoint" value="/user" />
+
+      <label><input type="checkbox" id="useCookies" checked /> Use cookies (include credentials)</label>
+      <label><input type="checkbox" id="storeToken" /> Save token to localStorage (Authorization header, only if you use a token/JWT plugin)</label>
+
+      <button id="clearStorage">Clear saved token</button>
+
+      <p class="small">
+        Note: better-auth uses cookie-based sessions by default. Your NestJS backend must have
+        CORS enabled with <code>credentials: true</code> and this page's origin listed in
+        <code>trustedOrigins</code>, or the session cookie won't be set/sent.
+      </p>
+    </div>
+
+    <div style="flex:1">
+      <div class="card">
+        <h3>Register (sign-up)</h3>
+        <label>Name</label>
+        <input id="regName" placeholder="Jane Doe" />
+        <label>Email</label>
+        <input id="regEmail" placeholder="user@example.com" />
+        <label>Password</label>
+        <input id="regPassword" type="password" />
+        <button id="btnRegister">Register</button>
+      </div>
+
+      <div class="card">
+        <h3>Login (sign-in)</h3>
+        <label>Email</label>
+        <input id="loginEmail" placeholder="user@example.com" />
+        <label>Password</label>
+        <input id="loginPassword" type="password" />
+        <button id="btnLogin">Login</button>
+      </div>
+
+      <div class="card">
+        <h3>Social Login</h3>
+        <p class="small">Uses POST /api/auth/sign-in/social with { provider }. Better-auth responds with a redirect URL — this page then navigates the browser there to complete the OAuth flow.</p>
+        <label>Callback URL (where to land after OAuth completes)</label>
+        <input id="callbackURL" value="http://localhost:8080/auth-test.html" />
+        <button id="btnGoogle">Sign in with Google</button>
+        <button id="btnGithub">Sign in with GitHub</button>
+        <button id="btn42">Sign in with 42</button>
+      </div>
+
+      <div class="card">
+        <h3>User</h3>
+        <button id="btnGetUser">Get user</button>
+        <button id="btnLogout">Logout</button>
+      </div>
+
+      <div class="card">
+        <h3>Response</h3>
+        <pre id="output">No requests yet.</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function $(id){ return document.getElementById(id); }
+    function out(v){ try{ $('output').textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2);}catch(e){ console.log(e);} }
+
+    function fullUrl(path){
+      if (!path) return '';
+      try { if (path.startsWith('http')) return path; } catch(e) {}
+      const base = $('baseUrl').value.replace(/\/$/, '');
+      if (!base) return path;
+      if (!path.startsWith('/')) path = '/' + path;
+      return base + path;
+    }
+
+    async function makeRequest(url, opts = {}){
+      const useCookies = $('useCookies').checked;
+      const storeToken = $('storeToken').checked;
+      const token = localStorage.getItem('auth_token');
+      const headers = opts.headers || {};
+      if (!useCookies && token) headers['Authorization'] = 'Bearer ' + token;
+      opts.headers = headers;
+      if (useCookies) opts.credentials = 'include';
+      try{
+        const res = await fetch(url, opts);
+        let bodyText = '';
+        try { bodyText = await res.text(); }
+        catch(e){ bodyText = '' }
+        let json = null;
+        try { json = JSON.parse(bodyText); } catch(e) { json = bodyText }
+
+        // Auto-save token if the response contains one and user requested
+        if (storeToken && json && typeof json === 'object'){
+          // common token keys: token, accessToken, access_token
+          const tokenKey = json.token || json.accessToken || json.access_token || json?.session?.accessToken;
+          if (tokenKey) localStorage.setItem('auth_token', tokenKey);
+        }
+
+        out({ url, status: res.status, ok: res.ok, body: json });
+        return { res, body: json };
+      } catch (err){
+        out({ error: String(err) });
+        throw err;
+      }
+    }
+
+    // Register (sign-up)
+    $('btnRegister').addEventListener('click', async ()=>{
+      const name = $('regName').value;
+      const email = $('regEmail').value;
+      const password = $('regPassword').value;
+      if (!name || !email || !password) return out('Provide name, email and password');
+      const url = fullUrl($('registerEndpoint').value);
+      await makeRequest(url, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ name, email, password }) });
+    });
+
+    // Login (sign-in)
+    $('btnLogin').addEventListener('click', async ()=>{
+      const email = $('loginEmail').value;
+      const password = $('loginPassword').value;
+      if (!email || !password) return out('Provide email and password');
+      const url = fullUrl($('loginEndpoint').value);
+      const { body } = await makeRequest(url, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ email, password }) });
+      // also try to extract and save token if returned (only relevant if you use a token plugin)
+      if ($('storeToken').checked && body){
+        const tokenKey = body.token || body.accessToken || body.access_token || body?.session?.accessToken;
+        if (tokenKey) localStorage.setItem('auth_token', tokenKey);
+      }
+    });
+
+    // Social sign-in (Google / GitHub / 42)
+    async function signInSocial(provider){
+      const callbackURL = $('callbackURL').value || window.location.href;
+      const url = fullUrl('/api/auth/sign-in/social');
+      const { body } = await makeRequest(url, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ provider, callbackURL })
+      });
+      // better-auth returns { url, redirect: true } — navigate the browser there
+      if (body && body.url){
+        window.location.href = body.url;
+      } else {
+        out({ note: 'No redirect url returned — check provider is configured on the backend', body });
+      }
+    }
+
+    $('btnGoogle').addEventListener('click', ()=> signInSocial('google'));
+    $('btnGithub').addEventListener('click', ()=> signInSocial('github'));
+    $('btn42').addEventListener('click', ()=> signInSocial('42-school'));
+
+    // Get session
+    $('btnGetUser').addEventListener('click', async ()=>{
+      const url = fullUrl($('getUserEndpoint').value);
+      await makeRequest(url, { method: 'GET' });
+    });
+
+    // Logout (sign-out)
+    $('btnLogout').addEventListener('click', async ()=>{
+      const url = fullUrl($('logoutEndpoint').value);
+      await makeRequest(url, { method: 'POST' });
+      // if using token, clear it on logout
+      if ($('storeToken').checked) localStorage.removeItem('auth_token');
+    });
+
+    $('clearStorage').addEventListener('click', ()=>{ localStorage.removeItem('auth_token'); out('Cleared token'); });
+
+    // Show saved token if any
+    const saved = localStorage.getItem('auth_token');
+    if (saved) out({ savedToken: saved });
+  </script>
+
+  <!--
+    Notes:
+    - better-auth default routes (basePath = /api/auth), assuming email/password auth is enabled:
+        POST /api/auth/sign-up/email   body: { name, email, password }
+        POST /api/auth/sign-in/email   body: { email, password }
+        POST /api/auth/sign-out
+        GET  /api/auth/get-session
+    - better-auth uses cookie-based sessions by default (not bearer tokens), so:
+        * Keep "Use cookies" checked.
+        * Your NestJS app needs: app.enableCors({ origin: <this-page-origin>, credentials: true })
+        * Your betterAuth() config needs trustedOrigins including this page's origin.
+    - Run this file locally with a static server, e.g. `npx http-server` or `python -m http.server`,
+      then set Base URL above to wherever it's served (e.g. http://localhost:8080) is NOT the base URL field —
+      Base URL should be your NestJS backend's origin (e.g. http://localhost:3000).
+
+    - Social login (Google / GitHub / 42) requires backend config in your betterAuth() call:
+
+        socialProviders: {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+          },
+          github: {
+            clientId: process.env.GITHUB_CLIENT_ID!,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+          },
+          // 42 (the coding school) is not a built-in better-auth provider — since it's
+          // OAuth2-compatible, use the "genericOAuth" plugin instead:
+          //   import { genericOAuth } from "better-auth/plugins";
+          //   plugins: [
+          //     genericOAuth({
+          //       config: [{
+          //         providerId: "42-school",
+          //         clientId: process.env.FT_CLIENT_ID!,
+          //         clientSecret: process.env.FT_CLIENT_SECRET!,
+          //         authorizationUrl: "https://api.intra.42.fr/oauth/authorize",
+          //         tokenUrl: "https://api.intra.42.fr/oauth/token",
+          //         userInfoUrl: "https://api.intra.42.fr/v2/me",
+          //         scopes: ["public"],
+          //       }],
+          //     }),
+          //   ]
+          // With genericOAuth, sign-in uses a different endpoint/body shape:
+          //   POST /api/auth/sign-in/oauth2  body: { providerId: "42-school", callbackURL }
+          // instead of /api/auth/sign-in/social — adjust signInSocial() above if you add this.
+        }
+
+      Each provider also needs its OAuth app's callback/redirect URL registered on the
+      provider's side (Google Cloud Console, GitHub OAuth Apps, 42's API settings), pointing to:
+        http://localhost:3000/api/auth/callback/google
+        http://localhost:3000/api/auth/callback/github
+        http://localhost:3000/api/auth/callback/42-school   (if using genericOAuth as above)
+  -->
+</body>
+</html>

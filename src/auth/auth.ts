@@ -10,9 +10,9 @@ const prisma = new PrismaClient({ adapter });
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: { enabled: true },
-  baseUrl: process.env.BETTER_AUTH_URL,
+  baseURL: process.env.BETTER_AUTH_URL,
   //ila zdti chi localhost b port wahad khor zido hna bach req twasal
-  trustedOrigins: ["http://localhost:3000", "http://localhost:5500"],
+  trustedOrigins: ["http://localhost:3000", "http://localhost:5500", "http://localhost:8080"],
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
