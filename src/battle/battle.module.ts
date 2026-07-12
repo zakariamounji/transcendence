@@ -6,7 +6,7 @@ import { BattleGateway } from "./battle.gateway";
 
 @Module({
   imports: [DatabaseModule],
-  providers: [BattleService],
+  providers: [BattleService, BattleGateway],
   controllers: [BattleController],
   exports: [BattleService, BattleGateway],
 })
