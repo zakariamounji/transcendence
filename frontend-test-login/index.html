@@ -1,258 +1,413 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Auth Test Page</title>
-  <style>
-    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin: 20px; }
-    .col { display:flex; gap:16px; }
-    .card { border:1px solid #ddd; padding:16px; border-radius:8px; width:360px; }
-    input, button, textarea { width:100%; padding:8px; margin:6px 0; box-sizing:border-box; }
-    label { font-weight:600; display:block; margin-top:8px; }
-    .small { font-size:13px; color:#666; }
-    pre { background:#f7f7f7; padding:12px; border-radius:6px; max-height:300px; overflow:auto }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>API Test Console</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1e222b; --border:#2a2f3a;
+    --text:#e6e8ec; --muted:#8b93a3; --accent:#5b8cff; --accent-2:#22c55e;
+    --danger:#ef4444; --warn:#f59e0b; --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  header{
+    padding:18px 24px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  header h1{ font-size:16px; margin:0; letter-spacing:.02em; }
+  header h1 span{ color:var(--muted); font-weight:400; }
+  .conn{ display:flex; align-items:center; gap:16px; font-size:13px; color:var(--muted); }
+  .pill{ display:flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid var(--border); border-radius:999px; }
+  .dot{ width:8px; height:8px; border-radius:50%; background:#4b5563; }
+  .dot.on{ background:var(--accent-2); }
+  .dot.off{ background:var(--danger); }
+
+  nav{ display:flex; gap:2px; padding:0 24px; border-bottom:1px solid var(--border); background:var(--panel); }
+  nav button{
+    background:none; border:none; color:var(--muted); padding:12px 16px; font-size:13px;
+    cursor:pointer; border-bottom:2px solid transparent; font-weight:500;
+  }
+  nav button.active{ color:var(--text); border-bottom-color:var(--accent); }
+
+  main{ display:grid; grid-template-columns: 1fr 380px; gap:0; }
+  .tab{ display:none; padding:20px 24px; }
+  .tab.active{ display:block; }
+
+  .grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap:14px; }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; }
+  .card h3{ margin:0 0 4px; font-size:13px; color:var(--text); }
+  .card p.hint{ margin:0 0 10px; font-size:12px; color:var(--muted); line-height:1.5; }
+
+  label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  input, select{
+    width:100%; padding:9px 10px; background:var(--panel-2); border:1px solid var(--border);
+    border-radius:6px; color:var(--text); font-size:13px;
+  }
+  input:focus, select:focus{ outline:none; border-color:var(--accent); }
+  button.action{
+    width:100%; margin-top:12px; padding:9px 10px; border:none; border-radius:6px;
+    background:var(--accent); color:white; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  button.action:hover{ opacity:.9; }
+  button.action.secondary{ background:var(--panel-2); border:1px solid var(--border); color:var(--text); }
+  button.action.danger{ background:var(--danger); }
+  button.action.ghost{ background:transparent; border:1px solid var(--border); color:var(--muted); }
+
+  .row{ display:flex; gap:8px; }
+  .row > *{ flex:1; }
+
+  aside{ border-left:1px solid var(--border); background:var(--panel); padding:16px; height:100vh; position:sticky; top:0; display:flex; flex-direction:column; }
+  aside h3{ font-size:13px; margin:0 0 10px; }
+  #log{
+    flex:1; overflow:auto; background:#0a0c10; border:1px solid var(--border); border-radius:8px;
+    padding:10px; font-family:var(--mono); font-size:11.5px; line-height:1.6; color:#9fe870;
+  }
+  #log .entry{ border-bottom:1px dashed #1c212c; padding:6px 0; word-break:break-word; }
+  #log .entry .tag{ color:#5b8cff; }
+  #log .entry .err{ color:#ef4444; }
+  #log .time{ color:#555f70; }
+
+  .settings{ font-size:12px; color:var(--muted); margin-top:10px; }
+  .badge{ display:inline-block; font-size:10px; padding:2px 6px; border-radius:4px; background:var(--panel-2); border:1px solid var(--border); color:var(--muted); margin-left:6px; }
+</style>
 </head>
 <body>
-  <h2>Auth Test Page (better-auth)</h2>
-  <p class="small">Use this page to test sign-up/sign-in/sign-out/get-session for your NestJS + better-auth backend. Edit endpoints below if you changed better-auth's basePath.</p>
 
-  <div class="col">
-    <div class="card">
-      <label>Base URL</label>
-      <input id="baseUrl" placeholder="http://localhost:3000" value="http://localhost:3000" />
-
-      <label>Sign-up endpoint</label>
-      <input id="registerEndpoint" value="/api/auth/sign-up/email" />
-
-      <label>Sign-in endpoint</label>
-      <input id="loginEndpoint" value="/api/auth/sign-in/email" />
-
-      <label>Sign-out endpoint</label>
-      <input id="logoutEndpoint" value="/api/auth/sign-out" />
-
-      <label>Get-session endpoint</label>
-      <input id="getUserEndpoint" value="/user" />
-
-      <label><input type="checkbox" id="useCookies" checked /> Use cookies (include credentials)</label>
-      <label><input type="checkbox" id="storeToken" /> Save token to localStorage (Authorization header, only if you use a token/JWT plugin)</label>
-
-      <button id="clearStorage">Clear saved token</button>
-
-      <p class="small">
-        Note: better-auth uses cookie-based sessions by default. Your NestJS backend must have
-        CORS enabled with <code>credentials: true</code> and this page's origin listed in
-        <code>trustedOrigins</code>, or the session cookie won't be set/sent.
-      </p>
-    </div>
-
-    <div style="flex:1">
-      <div class="card">
-        <h3>Register (sign-up)</h3>
-        <label>Name</label>
-        <input id="regName" placeholder="Jane Doe" />
-        <label>Email</label>
-        <input id="regEmail" placeholder="user@example.com" />
-        <label>Password</label>
-        <input id="regPassword" type="password" />
-        <button id="btnRegister">Register</button>
-      </div>
-
-      <div class="card">
-        <h3>Login (sign-in)</h3>
-        <label>Email</label>
-        <input id="loginEmail" placeholder="user@example.com" />
-        <label>Password</label>
-        <input id="loginPassword" type="password" />
-        <button id="btnLogin">Login</button>
-      </div>
-
-      <div class="card">
-        <h3>Social Login</h3>
-        <p class="small">Uses POST /api/auth/sign-in/social with { provider }. Better-auth responds with a redirect URL — this page then navigates the browser there to complete the OAuth flow.</p>
-        <label>Callback URL (where to land after OAuth completes)</label>
-        <input id="callbackURL" value="http://localhost:8080/auth-test.html" />
-        <button id="btnGoogle">Sign in with Google</button>
-        <button id="btnGithub">Sign in with GitHub</button>
-        <button id="btn42">Sign in with 42</button>
-      </div>
-
-      <div class="card">
-        <h3>User</h3>
-        <button id="btnGetUser">Get user</button>
-        <button id="btnLogout">Logout</button>
-      </div>
-
-      <div class="card">
-        <h3>Response</h3>
-        <pre id="output">No requests yet.</pre>
-      </div>
-    </div>
+<header>
+  <h1>API Test Console <span>— auth / user / battle</span></h1>
+  <div class="conn">
+    <div class="pill"><span class="dot" id="sessionDot"></span> Session: <span id="sessionLabel">unknown</span></div>
+    <div class="pill"><span class="dot" id="wsDot"></span> WebSocket: <span id="wsLabel">disconnected</span></div>
   </div>
+</header>
 
-  <script>
-    function $(id){ return document.getElementById(id); }
-    function out(v){ try{ $('output').textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2);}catch(e){ console.log(e);} }
+<nav>
+  <button class="tabbtn active" data-tab="auth">Auth</button>
+  <button class="tabbtn" data-tab="user">User</button>
+  <button class="tabbtn" data-tab="battle">Battle</button>
+  <button class="tabbtn" data-tab="settings">Settings</button>
+</nav>
 
-    function fullUrl(path){
-      if (!path) return '';
-      try { if (path.startsWith('http')) return path; } catch(e) {}
-      const base = $('baseUrl').value.replace(/\/$/, '');
-      if (!base) return path;
-      if (!path.startsWith('/')) path = '/' + path;
-      return base + path;
-    }
+<main>
+<div>
 
-    async function makeRequest(url, opts = {}){
-      const useCookies = $('useCookies').checked;
-      const storeToken = $('storeToken').checked;
-      const token = localStorage.getItem('auth_token');
-      const headers = opts.headers || {};
-      if (!useCookies && token) headers['Authorization'] = 'Bearer ' + token;
-      opts.headers = headers;
-      if (useCookies) opts.credentials = 'include';
-      try{
-        const res = await fetch(url, opts);
-        let bodyText = '';
-        try { bodyText = await res.text(); }
-        catch(e){ bodyText = '' }
-        let json = null;
-        try { json = JSON.parse(bodyText); } catch(e) { json = bodyText }
+  <!-- AUTH TAB -->
+  <section class="tab active" id="tab-auth">
+    <div class="grid">
+      <div class="card">
+        <h3>Register</h3>
+        <p class="hint">POST /api/auth/sign-up/email</p>
+        <label>Name</label><input id="regName" placeholder="Jane Doe" />
+        <label>Email</label><input id="regEmail" placeholder="user@example.com" />
+        <label>Password</label><input id="regPassword" type="password" />
+        <button class="action" id="btnRegister">Register</button>
+      </div>
 
-        // Auto-save token if the response contains one and user requested
-        if (storeToken && json && typeof json === 'object'){
-          // common token keys: token, accessToken, access_token
-          const tokenKey = json.token || json.accessToken || json.access_token || json?.session?.accessToken;
-          if (tokenKey) localStorage.setItem('auth_token', tokenKey);
-        }
+      <div class="card">
+        <h3>Login</h3>
+        <p class="hint">POST /api/auth/sign-in/email</p>
+        <label>Email</label><input id="loginEmail" placeholder="user@example.com" />
+        <label>Password</label><input id="loginPassword" type="password" />
+        <button class="action" id="btnLogin">Login</button>
+      </div>
 
-        out({ url, status: res.status, ok: res.ok, body: json });
-        return { res, body: json };
-      } catch (err){
-        out({ error: String(err) });
-        throw err;
-      }
-    }
+      <div class="card">
+        <h3>Social login</h3>
+        <p class="hint">Redirects the browser to the provider, then back to Callback URL.</p>
+        <label>Callback URL</label>
+        <input id="callbackURL" value="http://localhost:8080/full-test.html" />
+        <div class="row">
+          <button class="action secondary" id="btnGoogle">Google</button>
+          <button class="action secondary" id="btnGithub">GitHub</button>
+        </div>
+        <button class="action secondary" id="btn42" style="margin-top:8px;">42 School</button>
+      </div>
 
-    // Register (sign-up)
-    $('btnRegister').addEventListener('click', async ()=>{
-      const name = $('regName').value;
-      const email = $('regEmail').value;
-      const password = $('regPassword').value;
-      if (!name || !email || !password) return out('Provide name, email and password');
-      const url = fullUrl($('registerEndpoint').value);
-      await makeRequest(url, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ name, email, password }) });
-    });
+      <div class="card">
+        <h3>Session</h3>
+        <p class="hint">GET /api/auth/get-session · POST /api/auth/sign-out</p>
+        <button class="action secondary" id="btnGetSession">Get current session</button>
+        <button class="action danger" id="btnLogout">Logout</button>
+      </div>
+    </div>
+  </section>
 
-    // Login (sign-in)
-    $('btnLogin').addEventListener('click', async ()=>{
-      const email = $('loginEmail').value;
-      const password = $('loginPassword').value;
-      if (!email || !password) return out('Provide email and password');
-      const url = fullUrl($('loginEndpoint').value);
-      const { body } = await makeRequest(url, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ email, password }) });
-      // also try to extract and save token if returned (only relevant if you use a token plugin)
-      if ($('storeToken').checked && body){
-        const tokenKey = body.token || body.accessToken || body.access_token || body?.session?.accessToken;
-        if (tokenKey) localStorage.setItem('auth_token', tokenKey);
-      }
-    });
+  <!-- USER TAB -->
+  <section class="tab" id="tab-user">
+    <div class="grid">
+      <div class="card">
+        <h3>My profile</h3>
+        <p class="hint">GET /users/me</p>
+        <button class="action secondary" id="btnGetMe">Get my profile</button>
+      </div>
 
-    // Social sign-in (Google / GitHub / 42)
-    async function signInSocial(provider){
-      const callbackURL = $('callbackURL').value || window.location.href;
-      const url = fullUrl('/api/auth/sign-in/social');
-      const { body } = await makeRequest(url, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ provider, callbackURL })
-      });
-      // better-auth returns { url, redirect: true } — navigate the browser there
-      if (body && body.url){
-        window.location.href = body.url;
-      } else {
-        out({ note: 'No redirect url returned — check provider is configured on the backend', body });
-      }
-    }
+      <div class="card">
+        <h3>Update profile</h3>
+        <p class="hint">PATCH /users/me</p>
+        <label>Full name</label><input id="updFullName" placeholder="leave blank to skip" />
+        <label>Image URL</label><input id="updImage" placeholder="leave blank to skip" />
+        <button class="action" id="btnUpdateMe">Save changes</button>
+      </div>
 
-    $('btnGoogle').addEventListener('click', ()=> signInSocial('google'));
-    $('btnGithub').addEventListener('click', ()=> signInSocial('github'));
-    $('btn42').addEventListener('click', ()=> signInSocial('42-school'));
+      <div class="card">
+        <h3>Lookup by id</h3>
+        <p class="hint">GET /users/:id — for checking another user's public profile</p>
+        <label>User ID</label><input id="lookupUserId" placeholder="paste a user id" />
+        <button class="action secondary" id="btnLookupUser">Get user</button>
+      </div>
+    </div>
+  </section>
 
-    // Get session
-    $('btnGetUser').addEventListener('click', async ()=>{
-      const url = fullUrl($('getUserEndpoint').value);
-      await makeRequest(url, { method: 'GET' });
-    });
+  <!-- BATTLE TAB -->
+  <section class="tab" id="tab-battle">
+    <div class="grid">
+      <div class="card">
+        <h3>Create battle <span class="badge">REST</span></h3>
+        <p class="hint">POST /battles — needs an existing Challenge ID</p>
+        <label>Mode</label>
+        <select id="mode"><option>SOLO</option><option>DUO</option><option>GROUP</option></select>
+        <label>Visibility</label>
+        <select id="visibility"><option>PUBLIC</option><option>PRIVATE</option></select>
+        <label>Challenge ID</label><input id="challengeId" placeholder="existing challenge cid" />
+        <button class="action" id="btnCreateBattle">Create battle</button>
+      </div>
 
-    // Logout (sign-out)
-    $('btnLogout').addEventListener('click', async ()=>{
-      const url = fullUrl($('logoutEndpoint').value);
-      await makeRequest(url, { method: 'POST' });
-      // if using token, clear it on logout
-      if ($('storeToken').checked) localStorage.removeItem('auth_token');
-    });
+      <div class="card">
+        <h3>Target battle</h3>
+        <p class="hint">Used by every action below</p>
+        <label>Battle ID</label><input id="battleId" placeholder="auto-fills after create" />
+        <label>Room code (private battles only)</label><input id="roomCode" placeholder="optional" />
+      </div>
 
-    $('clearStorage').addEventListener('click', ()=>{ localStorage.removeItem('auth_token'); out('Cleared token'); });
+      <div class="card">
+        <h3>Live actions <span class="badge">WebSocket</span></h3>
+        <p class="hint">Connect the socket first (Settings tab), then use these.</p>
+        <button class="action secondary" id="btnJoin">Join</button>
+        <button class="action secondary" id="btnLeave">Leave</button>
+        <button class="action secondary" id="btnStart">Start</button>
+      </div>
 
-    // Show saved token if any
-    const saved = localStorage.getItem('auth_token');
-    if (saved) out({ savedToken: saved });
-  </script>
+      <div class="card">
+        <h3>Lifecycle <span class="badge">REST</span></h3>
+        <button class="action secondary" id="btnGetBattle">Get battle</button>
+        <button class="action secondary" id="btnGetAllBattles">List public battles</button>
+        <button class="action danger" id="btnCancelBattle">Cancel battle</button>
+      </div>
+    </div>
+  </section>
 
-  <!--
-    Notes:
-    - better-auth default routes (basePath = /api/auth), assuming email/password auth is enabled:
-        POST /api/auth/sign-up/email   body: { name, email, password }
-        POST /api/auth/sign-in/email   body: { email, password }
-        POST /api/auth/sign-out
-        GET  /api/auth/get-session
-    - better-auth uses cookie-based sessions by default (not bearer tokens), so:
-        * Keep "Use cookies" checked.
-        * Your NestJS app needs: app.enableCors({ origin: <this-page-origin>, credentials: true })
-        * Your betterAuth() config needs trustedOrigins including this page's origin.
-    - Run this file locally with a static server, e.g. `npx http-server` or `python -m http.server`,
-      then set Base URL above to wherever it's served (e.g. http://localhost:8080) is NOT the base URL field —
-      Base URL should be your NestJS backend's origin (e.g. http://localhost:3000).
+  <!-- SETTINGS TAB -->
+  <section class="tab" id="tab-settings">
+    <div class="grid">
+      <div class="card">
+        <h3>Backend</h3>
+        <label>Backend URL</label>
+        <input id="baseUrl" value="http://localhost:3000" />
+        <button class="action secondary" id="btnConnectWs">Connect WebSocket</button>
+        <button class="action ghost" id="btnDisconnectWs">Disconnect</button>
+        <p class="settings">
+          This page must be served (not opened as a file) from an origin that is listed in
+          your backend's CORS <code>origin</code>, better-auth's <code>trustedOrigins</code>,
+          and the <code>BattleGateway</code> CORS config — all three, matching exactly.
+        </p>
+      </div>
+    </div>
+  </section>
 
-    - Social login (Google / GitHub / 42) requires backend config in your betterAuth() call:
+</div>
 
-        socialProviders: {
-          google: {
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-          },
-          github: {
-            clientId: process.env.GITHUB_CLIENT_ID!,
-            clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-          },
-          // 42 (the coding school) is not a built-in better-auth provider — since it's
-          // OAuth2-compatible, use the "genericOAuth" plugin instead:
-          //   import { genericOAuth } from "better-auth/plugins";
-          //   plugins: [
-          //     genericOAuth({
-          //       config: [{
-          //         providerId: "42-school",
-          //         clientId: process.env.FT_CLIENT_ID!,
-          //         clientSecret: process.env.FT_CLIENT_SECRET!,
-          //         authorizationUrl: "https://api.intra.42.fr/oauth/authorize",
-          //         tokenUrl: "https://api.intra.42.fr/oauth/token",
-          //         userInfoUrl: "https://api.intra.42.fr/v2/me",
-          //         scopes: ["public"],
-          //       }],
-          //     }),
-          //   ]
-          // With genericOAuth, sign-in uses a different endpoint/body shape:
-          //   POST /api/auth/sign-in/oauth2  body: { providerId: "42-school", callbackURL }
-          // instead of /api/auth/sign-in/social — adjust signInSocial() above if you add this.
-        }
+<aside>
+  <h3>Event log</h3>
+  <div id="log"></div>
+  <button class="action ghost" id="btnClearLog" style="margin-top:10px;">Clear log</button>
+</aside>
+</main>
 
-      Each provider also needs its OAuth app's callback/redirect URL registered on the
-      provider's side (Google Cloud Console, GitHub OAuth Apps, 42's API settings), pointing to:
-        http://localhost:3000/api/auth/callback/google
-        http://localhost:3000/api/auth/callback/github
-        http://localhost:3000/api/auth/callback/42-school   (if using genericOAuth as above)
-  -->
+<script>
+function $(id){ return document.getElementById(id); }
+
+// ---------- tabs ----------
+document.querySelectorAll('.tabbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    $('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------- log ----------
+function log(tag, data, isError){
+  const el = $('log');
+  const entry = document.createElement('div');
+  entry.className = 'entry';
+  const time = new Date().toLocaleTimeString();
+  const body = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  entry.innerHTML = `<span class="time">${time}</span> <span class="tag">${tag}</span>${isError ? ' <span class="err">ERROR</span>' : ''}<br>${escapeHtml(body)}`;
+  el.prepend(entry);
+}
+function escapeHtml(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+$('btnClearLog').addEventListener('click', ()=> $('log').innerHTML = '');
+
+function base(){ return $('baseUrl').value.replace(/\/$/, ''); }
+
+// ---------- REST helper ----------
+async function rest(path, opts = {}){
+  const url = base() + path;
+  opts.credentials = 'include';
+  opts.headers = { 'Content-Type': 'application/json', ...(opts.headers||{}) };
+  try{
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    let body; try { body = JSON.parse(text); } catch(e){ body = text; }
+    log(`${opts.method||'GET'} ${path} → ${res.status}`, body, !res.ok);
+    return { ok: res.ok, status: res.status, body };
+  }catch(err){
+    log(`${opts.method||'GET'} ${path}`, String(err), true);
+    return { ok:false, status:0, body:null };
+  }
+}
+
+// ---------- session indicator ----------
+function setSession(known, label){
+  $('sessionDot').className = 'dot ' + (known ? 'on' : 'off');
+  $('sessionLabel').textContent = label;
+}
+
+// ===================== AUTH =====================
+$('btnRegister').addEventListener('click', async ()=>{
+  const name = $('regName').value, email = $('regEmail').value, password = $('regPassword').value;
+  if (!name || !email || !password) return log('register', 'Provide name, email and password', true);
+  await rest('/api/auth/sign-up/email', { method:'POST', body: JSON.stringify({ name, email, password }) });
+});
+
+$('btnLogin').addEventListener('click', async ()=>{
+  const email = $('loginEmail').value, password = $('loginPassword').value;
+  if (!email || !password) return log('login', 'Provide email and password', true);
+  const { ok, body } = await rest('/api/auth/sign-in/email', { method:'POST', body: JSON.stringify({ email, password }) });
+  if (ok) setSession(true, body?.user?.email || 'logged in');
+});
+
+async function signInSocial(provider){
+  const callbackURL = $('callbackURL').value || window.location.href;
+  const { body } = await rest('/api/auth/sign-in/social', { method:'POST', body: JSON.stringify({ provider, callbackURL }) });
+  if (body && body.url) window.location.href = body.url;
+  else log('social', 'No redirect url returned — is this provider configured on the backend?', true);
+}
+$('btnGoogle').addEventListener('click', ()=> signInSocial('google'));
+$('btnGithub').addEventListener('click', ()=> signInSocial('github'));
+$('btn42').addEventListener('click', ()=> signInSocial('42-school'));
+
+$('btnGetSession').addEventListener('click', async ()=>{
+  const { ok, body } = await rest('/api/auth/get-session', { method:'GET' });
+  if (ok && body?.user) setSession(true, body.user.email);
+  else setSession(false, 'not logged in');
+});
+
+$('btnLogout').addEventListener('click', async ()=>{
+  await rest('/api/auth/sign-out', { method:'POST' });
+  setSession(false, 'logged out');
+});
+
+// ===================== USER =====================
+$('btnGetMe').addEventListener('click', ()=> rest('/users/me', { method:'GET' }));
+
+$('btnUpdateMe').addEventListener('click', ()=>{
+  const data = {};
+  if ($('updFullName').value) data.fullName = $('updFullName').value;
+  if ($('updImage').value) data.image = $('updImage').value;
+  if (Object.keys(data).length === 0) return log('update profile', 'Nothing to update', true);
+  rest('/users/me', { method:'PATCH', body: JSON.stringify(data) });
+});
+
+$('btnLookupUser').addEventListener('click', ()=>{
+  const id = $('lookupUserId').value;
+  if (!id) return log('lookup user', 'Provide a user id', true);
+  rest(`/users/${id}`, { method:'GET' });
+});
+
+// ===================== BATTLE (REST) =====================
+$('btnCreateBattle').addEventListener('click', async ()=>{
+  const payload = { mode: $('mode').value, visibility: $('visibility').value, challengeId: $('challengeId').value };
+  const { ok, body } = await rest('/battles', { method:'POST', body: JSON.stringify(payload) });
+  if (ok && body?.bid) $('battleId').value = body.bid;
+});
+
+$('btnGetBattle').addEventListener('click', ()=>{
+  const id = $('battleId').value;
+  if (!id) return log('get battle', 'Set a Battle ID first', true);
+  rest(`/battles/${id}`, { method:'GET' });
+});
+
+$('btnGetAllBattles').addEventListener('click', ()=> rest('/battles', { method:'GET' }));
+
+$('btnCancelBattle').addEventListener('click', ()=>{
+  const id = $('battleId').value;
+  if (!id) return log('cancel battle', 'Set a Battle ID first', true);
+  rest(`/battles/${id}/cancel`, { method:'PATCH' });
+});
+
+// ===================== WEBSOCKET =====================
+let socket = null;
+
+function setWs(connected, label){
+  $('wsDot').className = 'dot ' + (connected ? 'on' : 'off');
+  $('wsLabel').textContent = label;
+}
+
+$('btnConnectWs').addEventListener('click', ()=>{
+  if (socket) socket.disconnect();
+  socket = io(base(), { withCredentials: true, transports: ['websocket'] });
+
+  socket.on('connect', ()=>{ setWs(true, socket.id); log('ws', 'connected'); });
+  socket.on('disconnect', ()=>{ setWs(false, 'disconnected'); log('ws', 'disconnected'); });
+  socket.on('connect_error', (err)=> log('ws connect_error', err.message || String(err), true));
+
+  socket.on('battle:playerJoined', (data)=> log('battle:playerJoined', data));
+  socket.on('battle:playerLeft', (data)=> log('battle:playerLeft', data));
+  socket.on('battle:started', (data)=> log('battle:started', data));
+  socket.on('battle:ended', (data)=> log('battle:ended', data));
+});
+
+$('btnDisconnectWs').addEventListener('click', ()=>{
+  if (socket) socket.disconnect();
+  setWs(false, 'disconnected');
+});
+
+function emitWithAck(event, payload){
+  if (!socket || !socket.connected) return log(event, 'Connect the WebSocket first (Settings tab)', true);
+  socket.emit(event, payload, (response)=> log(`${event} ack`, response));
+}
+
+$('btnJoin').addEventListener('click', ()=>{
+  const battleId = $('battleId').value, roomCode = $('roomCode').value || undefined;
+  if (!battleId) return log('join', 'Set a Battle ID first', true);
+  emitWithAck('battle:join', { battleId, roomCode });
+});
+$('btnLeave').addEventListener('click', ()=>{
+  const battleId = $('battleId').value;
+  if (!battleId) return log('leave', 'Set a Battle ID first', true);
+  emitWithAck('battle:leave', { battleId });
+});
+$('btnStart').addEventListener('click', ()=>{
+  const battleId = $('battleId').value;
+  if (!battleId) return log('start', 'Set a Battle ID first', true);
+  emitWithAck('battle:start', { battleId });
+});
+
+// on load, silently check session
+rest('/api/auth/get-session', { method:'GET' }).then(({ok, body})=>{
+  if (ok && body?.user) setSession(true, body.user.email);
+  else setSession(false, 'not logged in');
+});
+setWs(false, 'disconnected');
+</script>
+
 </body>
 </html>
