@@ -16,8 +16,7 @@ export class BattleService {
 
   async createBattle(creatorId: string, dto: CreateBattleDto) {
     const maxPlayers = MAX_PLAYERS_BY_MODE[dto.mode];
-    const roomCode =
-      dto.visibility === BattleVisibility.PRIVATE ? this.generateRoomCode() : null;
+    const roomCode = dto.visibility === BattleVisibility.PRIVATE ? this.generateRoomCode() : null;
 
     return this.db.battle.create({
       data: {
@@ -28,7 +27,7 @@ export class BattleService {
         durationSeconds: dto.durationSeconds ?? 1160,
         creatorId,
         challengeId: dto.challengeId,
-        players: { connect: { id: creatorId } }, // creator auto-joins
+        players: { connect: { id: creatorId } }, // creator auto-joins, connect: it is the one that actually creates the relation between the battle and the user
       },
     });
   }
