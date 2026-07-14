@@ -1,13 +1,13 @@
-import { OnModuleInit } from '@nestjs/common';
+import { OnModuleInit, UseGuards } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
-import { subscribe } from 'diagnostics_channel';
+import { AuthGuard, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { Server, Socket } from 'socket.io';
 import { BattleService } from 'src/battle/battle.service';
 import { CreateBattleDto } from 'src/battle/dto/create-battle.dto';
 import { JoinBattleDto } from 'src/battle/dto/join-battle.dto';
 
 @WebSocketGateway()
+@UseGuards(AuthGuard)
 export class MyGateway implements OnModuleInit{
   constructor(private readonly battleService: BattleService) {}
 
