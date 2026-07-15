@@ -38,6 +38,13 @@ export const auth = betterAuth({
           tokenUrl: "https://api.intra.42.fr/oauth/token",
           userInfoUrl: "https://api.intra.42.fr/v2/me",
           scopes: ["public"],
+          mapProfileToUser: (profile) => {
+            return {
+                name: profile.displayname ?? profile.usual_full_name ?? profile.login,
+                email: profile.email,
+                image: profile.image?.link,
+            };
+          },
         },
       ],
     }),
