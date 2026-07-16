@@ -292,7 +292,7 @@ $('btnLogin').addEventListener('click', async ()=>{
   if (!email || !password) return log('login', 'Provide email and password', true);
   const { ok, body } = await rest('/api/auth/sign-in/email', { method:'POST', body: JSON.stringify({ email, password }) });
   if (ok) setSession(true, body?.user?.email || 'logged in');
-});
+}); 
 
 async function signInSocial(provider){
   const callbackURL = $('callbackURL').value || window.location.href;
