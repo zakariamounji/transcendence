@@ -1,7 +1,10 @@
-import { IsOptional, IsString } from "class-validator";
+import { IsString, IsOptional } from "class-validator";
 
 export class JoinBattleDto {
+  @IsString()
+  battleId: string;
+
   @IsOptional()
   @IsString()
-  roomCode?: string; // required only when joining a PRIVATE battle
+  roomCode?: string;
 }

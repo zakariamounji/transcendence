@@ -75,6 +75,19 @@
 
   .settings{ font-size:12px; color:var(--muted); margin-top:10px; }
   .badge{ display:inline-block; font-size:10px; padding:2px 6px; border-radius:4px; background:var(--panel-2); border:1px solid var(--border); color:var(--muted); margin-left:6px; }
+
+  .state-row{ display:flex; flex-wrap:wrap; gap:8px 20px; margin-bottom:10px; }
+  .state-item{ font-size:12px; }
+  .state-item .k{ color:var(--muted); margin-right:4px; }
+  .state-item .v{ color:var(--text); font-weight:600; }
+  .status-pill{ padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.02em; }
+  .status-WAITING{ background:#3a2f0e; color:#f5c542; }
+  .status-RUNNING{ background:#0e3a1f; color:#4ade80; }
+  .status-COMPLETED{ background:#1e2a3a; color:#7db4f0; }
+  .status-CANCELLED{ background:#3a1616; color:#f87171; }
+  .player-chip{ display:inline-block; padding:3px 9px; margin:2px; border-radius:999px; background:var(--panel-2); border:1px solid var(--border); font-size:11.5px; }
+  .player-chip.you{ border-color:var(--accent); color:var(--accent); }
+  .player-chip.creator::after{ content:" ★"; color:var(--warn); }
 </style>
 </head>
 <body>
@@ -90,6 +103,7 @@
 <nav>
   <button class="tabbtn active" data-tab="auth">Auth</button>
   <button class="tabbtn" data-tab="user">User</button>
+  <button class="tabbtn" data-tab="challenge">Challenge</button>
   <button class="tabbtn" data-tab="battle">Battle</button>
   <button class="tabbtn" data-tab="settings">Settings</button>
 </nav>
@@ -121,7 +135,7 @@
         <h3>Social login</h3>
         <p class="hint">Redirects the browser to the provider, then back to Callback URL.</p>
         <label>Callback URL</label>
-        <input id="callbackURL" value="http://localhost:8080/auth-test.html" />
+        <input id="callbackURL" value="http://localhost:8080/full-test.html" />
         <div class="row">
           <button class="action secondary" id="btnGoogle">Google</button>
           <button class="action secondary" id="btnGithub">GitHub</button>
@@ -164,12 +178,54 @@
     </div>
   </section>
 
+  <!-- CHALLENGE TAB -->
+  <section class="tab" id="tab-challenge">
+    <div class="grid">
+      <div class="card">
+        <h3>Create challenge <span class="badge">REST</span></h3>
+        <p class="hint">POST /challenges</p>
+        <label>Title</label><input id="chTitle" placeholder="Binary Search Basics" />
+        <label>Slug</label><input id="chSlug" placeholder="binary-search-basics" />
+        <label>Description</label><input id="chDescription" placeholder="Solve search in sorted array in O(log n)." />
+        <label>Difficulty</label>
+        <select id="chDifficulty"><option>EASY</option><option selected>MEDIUM</option><option>HARD</option></select>
+        <label>Languages (comma separated)</label>
+        <input id="chLanguages" placeholder="CPP,PYTHON" />
+        <label>Exp reward</label><input id="chExpReward" type="number" value="100" />
+        <button class="action" id="btnCreateChallenge">Create challenge</button>
+      </div>
+
+      <div class="card">
+        <h3>Target challenge</h3>
+        <p class="hint">Used by the actions below — also auto-fills after create, and feeds the Battle tab's Challenge ID field</p>
+        <label>Challenge ID</label><input id="challengeIdTarget" placeholder="auto-fills after create" />
+      </div>
+
+      <div class="card">
+        <h3>Update challenge <span class="badge">REST</span></h3>
+        <p class="hint">PATCH /challenges/:challengeId — leave fields blank to skip them</p>
+        <label>Title</label><input id="updChTitle" placeholder="leave blank to skip" />
+        <label>Description</label><input id="updChDescription" placeholder="leave blank to skip" />
+        <label>Published?</label>
+        <select id="updChPublished"><option value="">no change</option><option value="true">true</option><option value="false">false</option></select>
+        <button class="action" id="btnUpdateChallenge">Save changes</button>
+      </div>
+
+      <div class="card">
+        <h3>Lifecycle <span class="badge">REST</span></h3>
+        <button class="action secondary" id="btnGetChallenge">Get challenge</button>
+        <button class="action secondary" id="btnGetAllChallenges">List all challenges</button>
+        <button class="action danger" id="btnDeleteChallenge">Delete challenge</button>
+      </div>
+    </div>
+  </section>
+
   <!-- BATTLE TAB -->
   <section class="tab" id="tab-battle">
     <div class="grid">
       <div class="card">
-        <h3>Create battle <span class="badge">REST</span></h3>
-        <p class="hint">POST /battles — needs an existing Challenge ID</p>
+        <h3>Step 1 — Create a battle <span class="badge">REST</span></h3>
+        <p class="hint">POST /battles — you become the creator and are auto-added as a player.</p>
         <label>Mode</label>
         <select id="mode"><option>SOLO</option><option>DUO</option><option>GROUP</option></select>
         <label>Visibility</label>
@@ -179,25 +235,44 @@
       </div>
 
       <div class="card">
-        <h3>Target battle</h3>
-        <p class="hint">Used by every action below</p>
-        <label>Battle ID</label><input id="battleId" placeholder="auto-fills after create" />
-        <label>Room code (private battles only)</label><input id="roomCode" placeholder="optional" />
+        <h3>Step 2 — Pick a target battle</h3>
+        <p class="hint">Every action below acts on this Battle ID. Auto-fills after you create one — or paste an id from a teammate to join theirs.</p>
+        <label>Battle ID</label><input id="battleId" placeholder="paste or auto-filled" />
+        <label>Room code <span class="badge">private only</span></label><input id="roomCode" placeholder="only needed to join a PRIVATE battle" />
+        <button class="action secondary" id="btnGetBattle">Refresh battle info ↓</button>
+      </div>
+
+      <div class="card" style="grid-column: 1 / -1;">
+        <h3>Battle state</h3>
+        <p class="hint">Updates automatically after create / join / leave / start / any refresh.</p>
+        <div id="battleState" class="small" style="font-size:13px; color:var(--muted);">No battle loaded yet — create one or paste a Battle ID and click "Refresh battle info".</div>
       </div>
 
       <div class="card">
-        <h3>Live actions <span class="badge">WebSocket</span></h3>
-        <p class="hint">Connect the socket first (Settings tab), then use these.</p>
-        <button class="action secondary" id="btnJoin">Join</button>
-        <button class="action secondary" id="btnLeave">Leave</button>
-        <button class="action secondary" id="btnStart">Start</button>
+        <h3>Step 3 — Join / Leave <span class="badge">WebSocket</span></h3>
+        <p class="hint">
+          Requires the WebSocket connected (Settings tab) <em>and</em> a valid session.
+          <b>Join</b> puts you in the battle's player list and its live room.
+          <b>Leave</b> only works while the battle is still WAITING.
+        </p>
+        <button class="action secondary" id="btnJoin">Join this battle</button>
+        <button class="action secondary" id="btnLeave">Leave this battle</button>
       </div>
 
       <div class="card">
-        <h3>Lifecycle <span class="badge">REST</span></h3>
-        <button class="action secondary" id="btnGetBattle">Get battle</button>
-        <button class="action secondary" id="btnGetAllBattles">List public battles</button>
+        <h3>Step 4 — Start / Cancel</h3>
+        <p class="hint">
+          <b>Start</b> (WebSocket) — creator only, moves WAITING → RUNNING, broadcasts to everyone in the room.
+          <b>Cancel</b> (REST) — creator only, only while WAITING.
+        </p>
+        <button class="action secondary" id="btnStart">Start battle</button>
         <button class="action danger" id="btnCancelBattle">Cancel battle</button>
+      </div>
+
+      <div class="card">
+        <h3>Browse</h3>
+        <p class="hint">GET /battles — public battles only, any status.</p>
+        <button class="action secondary" id="btnGetAllBattles">List public battles</button>
       </div>
     </div>
   </section>
@@ -275,9 +350,11 @@ async function rest(path, opts = {}){
 }
 
 // ---------- session indicator ----------
-function setSession(known, label){
+let currentUserId = null;
+function setSession(known, label, userId){
   $('sessionDot').className = 'dot ' + (known ? 'on' : 'off');
   $('sessionLabel').textContent = label;
+  currentUserId = known ? (userId ?? currentUserId) : null;
 }
 
 // ===================== AUTH =====================
@@ -291,7 +368,7 @@ $('btnLogin').addEventListener('click', async ()=>{
   const email = $('loginEmail').value, password = $('loginPassword').value;
   if (!email || !password) return log('login', 'Provide email and password', true);
   const { ok, body } = await rest('/api/auth/sign-in/email', { method:'POST', body: JSON.stringify({ email, password }) });
-  if (ok) setSession(true, body?.user?.email || 'logged in');
+  if (ok) setSession(true, body?.user?.email || 'logged in', body?.user?.id);
 });
 
 async function signInSocial(provider){
@@ -306,7 +383,7 @@ $('btn42').addEventListener('click', ()=> signInSocial('42-school'));
 
 $('btnGetSession').addEventListener('click', async ()=>{
   const { ok, body } = await rest('/api/auth/get-session', { method:'GET' });
-  if (ok && body?.user) setSession(true, body.user.email);
+  if (ok && body?.user) setSession(true, body.user.email, body.user.id);
   else setSession(false, 'not logged in');
 });
 
@@ -332,25 +409,101 @@ $('btnLookupUser').addEventListener('click', ()=>{
   rest(`/users/${id}`, { method:'GET' });
 });
 
+// ===================== CHALLENGE (REST) =====================
+$('btnCreateChallenge').addEventListener('click', async ()=>{
+  const languages = $('chLanguages').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const payload = {
+    title: $('chTitle').value,
+    slug: $('chSlug').value,
+    description: $('chDescription').value,
+    difficulty: $('chDifficulty').value,
+    languages,
+    expReward: Number($('chExpReward').value) || 100,
+  };
+  if (!payload.title || !payload.slug || !payload.description || languages.length === 0) {
+    return log('create challenge', 'Title, slug, description and at least one language are required', true);
+  }
+  const { ok, body } = await rest('/challenges', { method:'POST', body: JSON.stringify(payload) });
+  if (ok && body?.cid){
+    $('challengeIdTarget').value = body.cid;
+    $('challengeId').value = body.cid; // also feed the Battle tab's create-battle field
+  }
+});
+
+$('btnUpdateChallenge').addEventListener('click', ()=>{
+  const id = $('challengeIdTarget').value;
+  if (!id) return log('update challenge', 'Set a Challenge ID first', true);
+  const data = {};
+  if ($('updChTitle').value) data.title = $('updChTitle').value;
+  if ($('updChDescription').value) data.description = $('updChDescription').value;
+  if ($('updChPublished').value) data.isPublished = $('updChPublished').value === 'true';
+  if (Object.keys(data).length === 0) return log('update challenge', 'Nothing to update', true);
+  rest(`/challenges/${id}`, { method:'PATCH', body: JSON.stringify(data) });
+});
+
+$('btnGetChallenge').addEventListener('click', ()=>{
+  const id = $('challengeIdTarget').value;
+  if (!id) return log('get challenge', 'Set a Challenge ID first', true);
+  rest(`/challenges/${id}`, { method:'GET' });
+});
+
+$('btnGetAllChallenges').addEventListener('click', ()=> rest('/challenges', { method:'GET' }));
+
+$('btnDeleteChallenge').addEventListener('click', ()=>{
+  const id = $('challengeIdTarget').value;
+  if (!id) return log('delete challenge', 'Set a Challenge ID first', true);
+  rest(`/challenges/${id}`, { method:'DELETE' });
+});
+
 // ===================== BATTLE (REST) =====================
+function renderBattleState(battle){
+  if (!battle){
+    $('battleState').innerHTML = 'No battle loaded — create one, or paste a Battle ID and click "Refresh battle info".';
+    return;
+  }
+  const players = battle.players || [];
+  const chips = players.length
+    ? players.map(p => {
+        const isYou = p.id === currentUserId;
+        const isCreator = p.id === battle.creatorId;
+        return `<span class="player-chip ${isYou ? 'you' : ''} ${isCreator ? 'creator' : ''}">${p.fullName || p.name || p.id.slice(0,8)}${isYou ? ' (you)' : ''}</span>`;
+      }).join('')
+    : '<span class="small">no players loaded — refresh to see them</span>';
+
+  $('battleState').innerHTML = `
+    <div class="state-row">
+      <div class="state-item"><span class="k">Status</span><span class="status-pill status-${battle.status}">${battle.status}</span></div>
+      <div class="state-item"><span class="k">Mode</span><span class="v">${battle.mode}</span></div>
+      <div class="state-item"><span class="k">Visibility</span><span class="v">${battle.visibility}</span></div>
+      <div class="state-item"><span class="k">Players</span><span class="v">${players.length}/${battle.maxPlayers}</span></div>
+      ${battle.roomCode ? `<div class="state-item"><span class="k">Room code</span><span class="v">${battle.roomCode}</span></div>` : ''}
+    </div>
+    <div>${chips}</div>
+  `;
+  // keep the Battle ID field in sync for convenience
+  if (battle.bid) $('battleId').value = battle.bid;
+}
+
 $('btnCreateBattle').addEventListener('click', async ()=>{
   const payload = { mode: $('mode').value, visibility: $('visibility').value, challengeId: $('challengeId').value };
   const { ok, body } = await rest('/battles', { method:'POST', body: JSON.stringify(payload) });
-  if (ok && body?.bid) $('battleId').value = body.bid;
+  if (ok) renderBattleState(body);
 });
 
-$('btnGetBattle').addEventListener('click', ()=>{
+$('btnGetBattle').addEventListener('click', async ()=>{
   const id = $('battleId').value;
   if (!id) return log('get battle', 'Set a Battle ID first', true);
-  rest(`/battles/${id}`, { method:'GET' });
+  const { ok, body } = await rest(`/battles/${id}`, { method:'GET' });
+  if (ok) renderBattleState(body);
 });
 
 $('btnGetAllBattles').addEventListener('click', ()=> rest('/battles', { method:'GET' }));
 
-$('btnCancelBattle').addEventListener('click', ()=>{
+$('btnCancelBattle').addEventListener('click', async ()=>{
   const id = $('battleId').value;
   if (!id) return log('cancel battle', 'Set a Battle ID first', true);
-  rest(`/battles/${id}/cancel`, { method:'PATCH' });
+  const { ok, body } = await rest(`/battles/${id}/cancel`, { method:'PATCH' });
+  if (ok) renderBattleState(body);
 });
 
 // ===================== WEBSOCKET =====================
@@ -369,10 +522,10 @@ $('btnConnectWs').addEventListener('click', ()=>{
   socket.on('disconnect', ()=>{ setWs(false, 'disconnected'); log('ws', 'disconnected'); });
   socket.on('connect_error', (err)=> log('ws connect_error', err.message || String(err), true));
 
-  socket.on('battle:playerJoined', (data)=> log('battle:playerJoined', data));
-  socket.on('battle:playerLeft', (data)=> log('battle:playerLeft', data));
-  socket.on('battle:started', (data)=> log('battle:started', data));
-  socket.on('battle:ended', (data)=> log('battle:ended', data));
+  socket.on('battle:playerJoined', (data)=> { log('battle:playerJoined', data); if (data?.battle) renderBattleState(data.battle); });
+  socket.on('battle:playerLeft', (data)=> { log('battle:playerLeft', data); if (data?.battle) renderBattleState(data.battle); });
+  socket.on('battle:started', (data)=> { log('battle:started', data); if (data?.battle) renderBattleState(data.battle); });
+  socket.on('battle:ended', (data)=> { log('battle:ended', data); if (data?.battle) renderBattleState(data.battle); });
 });
 
 $('btnDisconnectWs').addEventListener('click', ()=>{
@@ -382,28 +535,36 @@ $('btnDisconnectWs').addEventListener('click', ()=>{
 
 function emitWithAck(event, payload){
   if (!socket || !socket.connected) return log(event, 'Connect the WebSocket first (Settings tab)', true);
-  socket.emit(event, payload, (response)=> log(`${event} ack`, response));
+  log(`${event} → sent`, payload); // immediate feedback, before any ack arrives
+  let acked = false;
+  socket.emit(event, payload, (response)=> {
+    acked = true;
+    log(`${event} ack`, response);
+    if (response && response.bid) renderBattleState(response);
+    else if (response && response.battle) renderBattleState(response.battle);
+  });
+  setTimeout(()=>{ if (!acked) log(`${event}`, 'No response after 4s — server may not be acking this event, or an exception was thrown silently. Check the backend terminal.', true); }, 4000);
 }
 
 $('btnJoin').addEventListener('click', ()=>{
   const battleId = $('battleId').value, roomCode = $('roomCode').value || undefined;
-  if (!battleId) return log('join', 'Set a Battle ID first', true);
-  emitWithAck('battle:join', { battleId, roomCode });
+  if (!battleId) return log('joinBattle', 'Set a Battle ID first', true);
+  emitWithAck('joinBattle', { battleId, roomCode });
 });
 $('btnLeave').addEventListener('click', ()=>{
   const battleId = $('battleId').value;
-  if (!battleId) return log('leave', 'Set a Battle ID first', true);
-  emitWithAck('battle:leave', { battleId });
+  if (!battleId) return log('leaveBattle', 'Set a Battle ID first', true);
+  emitWithAck('leaveBattle', { battleId });
 });
 $('btnStart').addEventListener('click', ()=>{
   const battleId = $('battleId').value;
-  if (!battleId) return log('start', 'Set a Battle ID first', true);
-  emitWithAck('battle:start', { battleId });
+  if (!battleId) return log('startBattle', 'Set a Battle ID first', true);
+  emitWithAck('startBattle', { battleId });
 });
 
 // on load, silently check session
 rest('/api/auth/get-session', { method:'GET' }).then(({ok, body})=>{
-  if (ok && body?.user) setSession(true, body.user.email);
+  if (ok && body?.user) setSession(true, body.user.email, body.user.id);
   else setSession(false, 'not logged in');
 });
 setWs(false, 'disconnected');
