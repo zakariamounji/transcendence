@@ -35,14 +35,13 @@ services:
     networks:
       - mynetwork
 
-  mariadb-exporter:
-    image: prom/mysqld-exporter:latest
-    container_name: mariadb-exporter
-    command:
-      - "--mysqld.username=exporter:1234"
-      - "--mysqld.address=db:3306"
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://exporter:1234@db:5432/postgres?sslmode=disable
     ports:
-      - "9104:9104"
+      - "9187:9187"
     networks:
       - mynetwork
 

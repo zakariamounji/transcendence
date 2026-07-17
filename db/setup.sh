@@ -1,45 +1,97 @@
 #!/bin/bash
 set -e
 
-mysqld_safe --datadir='/var/lib/mysql' &
+# 1. Initialize the database folder if it hasn't been done yet
+if [ ! -d "/var/lib/postgresql/15/main/base" ]; then
+    echo "Initializing database cluster..."
+    /usr/lib/postgresql/15/bin/initdb -D /var/lib/postgresql/15/main
+fi
 
-while ! mariadb-admin ping --silent; do
+echo "Starting temporary database instance..."
+/usr/lib/postgresql/15/bin/pg_ctl -D /var/lib/postgresql/15/main \
+    -o "-c config_file=/etc/postgresql/15/main/postgresql.conf" \
+    -l /tmp/postgres_init.log start
+
+echo "Waiting for database to be ready..."
+while ! /usr/lib/postgresql/15/bin/pg_isready -q; do
     sleep 1
 done
 
 echo "Database is ready. Running configuration queries..."
 
-mariadb -u root -p"1234" <<EOF
+/usr/lib/postgresql/15/bin/psql -U postgres <<'EOF'
+DO
+$$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'exporter') THEN
+        CREATE USER exporter WITH PASSWORD '1234';
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'zakaria') THEN
+        CREATE USER zakaria WITH PASSWORD '1234';
+    ELSE
+        ALTER USER zakaria WITH PASSWORD '1234';
+    END IF;
+END
+$$;
 
-CREATE DATABASE IF NOT EXISTS freelancer;
+SELECT 'CREATE DATABASE freelancer OWNER zakaria'
+WHERE NOT EXISTS (SELECT FROM pg_catalog.pg_database WHERE datname = 'freelancer')
+\gexec
 
-CREATE USER IF NOT EXISTS 'exporter'@'%' IDENTIFIED BY '1234';
-GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
-FLUSH PRIVILEGES;
+ALTER DATABASE freelancer OWNER TO zakaria;
 
+-- Connect to the freelancer database and fix ownership/privileges
+\c freelancer;
 
+GRANT ALL PRIVILEGES ON DATABASE freelancer TO zakaria;
+GRANT ALL PRIVILEGES ON SCHEMA public TO zakaria;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO zakaria;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO zakaria;
 
-CREATE USER IF NOT EXISTS 'zakaria'@'%' IDENTIFIED BY '1234';
-        
+DO
+$$
+DECLARE
+    tbl record;
+    seq record;
+BEGIN
+    FOR tbl IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+        EXECUTE format('ALTER TABLE public.%I OWNER TO zakaria', tbl.tablename);
+    END LOOP;
+    FOR seq IN SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public' LOOP
+        EXECUTE format('ALTER SEQUENCE public.%I OWNER TO zakaria', seq.sequence_name);
+    END LOOP;
+END
+$$;
 
-GRANT ALL PRIVILEGES ON freelancer.* TO 'zakaria'@'%';
+-- Remove stale users table/schema state so schema sync starts clean
+DROP TABLE IF EXISTS public.users CASCADE;
+DROP SEQUENCE IF EXISTS public.users_id_seq;
 
-FLUSH PRIVILEGES;
-USE freelancer;
+-- Create application table as zakaria
+SET SESSION AUTHORIZATION zakaria;
 
-CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    email varchar(255) NOT NULL,
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email varchar(255) NOT NULL UNIQUE,
     password varchar(255) NOT NULL
 );
-INSERT IGNORE INTO users (id, email, password) VALUES 
-(1, 'user@gmail.com', '1234567'),
-(2, 'zakaria@gmail.com', '1234567');
 
+ALTER TABLE public.users OWNER TO zakaria;
+ALTER SEQUENCE public.users_id_seq OWNER TO zakaria;
+
+INSERT INTO users (id, email, password) VALUES 
+(1, 'user@gmail.com', '1234567'),
+(2, 'zakaria@gmail.com', '1234567')
+ON CONFLICT (email) DO NOTHING;
+
+RESET SESSION AUTHORIZATION;
 EOF
 
-mariadb-admin -u root shutdown
+# 5. Stop the background instance cleanly using full path
+echo "Stopping temporary database instance..."
+/usr/lib/postgresql/15/bin/pg_ctl -D /var/lib/postgresql/15/main -m fast stop
 
-
-exec mysqld_safe
+# 6. Start the permanent database foreground process using full path
+echo "Starting database server as main process..."
+exec /usr/lib/postgresql/15/bin/postgres -D /var/lib/postgresql/15/main -c config_file=/etc/postgresql/15/main/postgresql.conf
 

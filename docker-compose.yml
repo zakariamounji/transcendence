@@ -1,13 +1,13 @@
 services:
   db:
-    build : ./db
+    build: ./db
     container_name: db
     ports:
-      - "3307:3306"
+      - "3307:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: "1234"
+      POSTGRES_PASSWORD: "1234"
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data:/var/lib/postgresql/15/main
     networks:
       - mynetwork
     
@@ -19,7 +19,6 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - /app/node_modules
     depends_on:
       - db
     networks:
@@ -38,10 +37,6 @@ services:
 volumes:
   db_data:
     driver: local
-    driver_opts:
-      type: none
-      device: /home/zakaria/data/db
-      o: bind
 
 networks:
   mynetwork:
