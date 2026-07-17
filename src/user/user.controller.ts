@@ -8,6 +8,11 @@ import { UpdateProfileDto } from './dto/updateProfile.dto'
 export class UserController {
     constructor(private readonly userService: UserService) {}
 
+    @Get('me')
+    getMe(@Session() session: UserSession) {
+        return this.userService.findUserById(session.user.id);
+    }
+
     @Get()
     getUser(@Session() session: UserSession) {
         return this.userService.findUserById(session.user.id);
