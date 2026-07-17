@@ -40,4 +40,10 @@ export class ChallengeController {
     async getAllChallenges() {
         return this.challengeService.getAllChallenges();
     }
+
+    @Get ('challenge/me')
+    async getMyChallenges(@Session() session: UserSession) {
+        const userId = session.user.id;
+        return this.challengeService.getChallengesByUserId(userId);
+    }
 }

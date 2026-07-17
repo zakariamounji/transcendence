@@ -59,4 +59,10 @@ export class ChallengeService {
     async getAllChallenges() {
         return this.databaseService.challenge.findMany();
     }
+
+    async getChallengesByUserId(userId: string) {
+        return this.databaseService.challenge.findMany({
+            where: { createdById: userId },
+        });
+    }
 }
