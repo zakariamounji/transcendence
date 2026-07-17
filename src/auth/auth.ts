@@ -40,9 +40,9 @@ export const auth = betterAuth({
           scopes: ["public"],
           mapProfileToUser: (profile) => {
             return {
-                name: profile.displayname ?? profile.usual_full_name ?? profile.login,
-                email: profile.email,
-                image: profile.image?.link,
+              name: profile.displayname ?? profile.usual_full_name ?? profile.login,
+              email: profile.email,
+              image: profile.image?.link || profile.image?.versions?.medium || null,
             };
           },
         },
