@@ -6,9 +6,11 @@ import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from './user/user.module';
 import { BattleModule } from './battle/battle.module';
 import { GatewayModule } from './gateway/gateway.module';
+import { changeEmail } from 'better-auth/api';
+import { ChallengeModule } from './challenge/challenge.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, UserModule, BattleModule, GatewayModule],
+  imports: [DatabaseModule, AuthModule, UserModule, BattleModule, GatewayModule, ChallengeModule],
   controllers: [AppController],
   providers: [AppService],
 })
