@@ -16,12 +16,12 @@ export const auth = betterAuth({
   trustedOrigins: ["http://localhost:3000", "http://localhost:5500", "http://localhost:8080", "http://localhost:1337", "http://10.14.4.9:1337"],
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
     },
   },
   hooks: {}, // for hooks to work
@@ -32,20 +32,50 @@ export const auth = betterAuth({
       config: [
         {
           providerId: "42-school",
-          clientId: process.env.SCHOOL42_CLIENT_ID as string,
-          clientSecret: process.env.SCHOOL42_CLIENT_SECRET as string,
-          authorizationUrl: "https://api.intra.42.fr/oauth/authorize",
-          tokenUrl: "https://api.intra.42.fr/oauth/token",
-          userInfoUrl: "https://api.intra.42.fr/v2/me",
+
+          clientId: process.env.SCHOOL42_CLIENT_ID!,
+          clientSecret: process.env.SCHOOL42_CLIENT_SECRET!,
+
+          authorizationUrl:
+            "https://api.intra.42.fr/oauth/authorize",
+
+          tokenUrl:
+            "https://api.intra.42.fr/oauth/token",
+
           scopes: ["public"],
-          mapProfileToUser: (profile) => {
+
+          getUserInfo: async (tokens) => {
+            const response = await fetch(
+              "https://api.intra.42.fr/v2/me",
+              {
+                headers: {
+                  Authorization: `Bearer ${tokens.accessToken}`,
+                },
+              }
+            );
+
+            const profile = await response.json()
+
+
             return {
-              name: profile.displayname ?? profile.usual_full_name ?? profile.login,
+              id: String(profile.id),
+
+              name:
+                profile.displayname ??
+                profile.usual_full_name ??
+                profile.login,
+
               email: profile.email,
-              image: profile.image?.link || profile.image?.versions?.medium || null,
+
+              image:
+                profile.image?.link ??
+                profile.image?.versions?.medium ??
+                null,
+
+              emailVerified: true,
             };
           },
-        },
+        }
       ],
     }),
   ],

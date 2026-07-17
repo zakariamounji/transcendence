@@ -69,7 +69,7 @@ model User {
   role   UserRole   @default(USER)
   status UserStatus @default(OFFLINE)
 
-  level Int @default(1)
+  level Int @default(0)
   exp   Int @default(0)
 
   wins   Int @default(0)
