@@ -1,0 +1,34 @@
+pipeline {
+    agent any
+
+    tools {
+        dockerTool 'docker'
+    }
+
+    environment {
+        REGISTRY_USER       = 'zakariamounji2'
+        FRONTEND_IMAGE      = 'nextjs-frontend'
+        BACKEND_IMAGE       = 'springboot-backend'
+        IMAGE_TAG           = 12
+        DOCKER_API_VERSION  = '1.40'
+    }
+
+    stages {
+        stage('checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Frontend Image') {
+            steps {
+                script {
+                    sh 'docker build -t ${REGISTRY_USER}/${FRONTEND_IMAGE}:${IMAGE_TAG} -t ${REGISTRY_USER}/${FRONTEND_IMAGE} ./frontend'
+                }
+            }
+        }
+    }
+
+
+
+}

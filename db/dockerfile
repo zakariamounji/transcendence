@@ -1,0 +1,21 @@
+FROM debian:12
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    mariadb-server \
+    procps && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up networking
+RUN sed -i 's/bind-address            = 127.0.0.1/bind-address            = 0.0.0.0/' /etc/mysql/mariadb.conf.d/50-server.cnf
+
+RUN mkdir -p /var/run/mysqld && chown mysql:mysql /var/run/mysqld
+
+# Copy the SETUP SCRIPT instead of the SQL file
+COPY ./setup.sh /usr/local/bin/init-db.sql
+RUN chmod +x /usr/local/bin/init-db.sql
+
+EXPOSE 3306
+
+# Run the script when the container starts
+ENTRYPOINT ["/usr/local/bin/init-db.sql"]
