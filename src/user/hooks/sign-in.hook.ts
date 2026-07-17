@@ -7,11 +7,11 @@ import { UserService } from "src/user/user.service";
 export class SignInHook {
   constructor(private readonly userService: UserService) {}
 
-  @AfterHook("/sign-in/email")
-  async handle(ctx: AuthHookContext) {
-    const id = ctx.context.newSession?.user?.id;
-    if (id) await this.userService.updateStatus(id, "ONLINE");
-  }
+  // @AfterHook("/sign-in/email")
+  // async handle(ctx: AuthHookContext) {
+  //   const id = ctx.context.newSession?.user?.id;
+  //   if (id) await this.userService.updateStatus(id, "ONLINE");
+  // }
 
   // if our implementation supports login in by default after regestering, we need another hool with path : "/sign-up/email"
 

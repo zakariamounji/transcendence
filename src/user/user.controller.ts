@@ -23,10 +23,10 @@ export class UserController {
         return this.userService.updateProfile(session.user.id, dto);
     }
 
-    // @Patch('status')
-    // updateStatus(@Session() session: UserSession, @Body('status') status: "ONLINE" | "OFFLINE" | "IN_BATTLE") {
-    //     return this.userService.updateStatus(session.user.id, status);
-    // }
+    @Patch('status')
+    updateStatus(@Session() session: UserSession, @Body('status') status: "ONLINE" | "OFFLINE" | "IN_BATTLE") {
+        return this.userService.updateStatus(session.user.id, status);
+    }
 
     @Patch('battleResult')
     updateBattleResult(@Session() session: UserSession, @Body('won') won: boolean, @Body('expGained') expGained: number) {

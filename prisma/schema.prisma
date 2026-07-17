@@ -61,10 +61,10 @@ enum Language {
 model User {
   id String @id @default(uuid())
 
-  fullName String  @default("Anonymous")
+  fullName String  @default("Anonymous") // ghadi itheyed men be3d
   email    String  @unique
   // password string
-  avatar   String?
+  avatar   String? // ghadi itheyed ta howa
 
   role   UserRole   @default(USER)
   status UserStatus @default(OFFLINE)
