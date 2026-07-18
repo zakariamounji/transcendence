@@ -32,18 +32,19 @@ export class ChallengeController {
         return this.challengeService.deleteChallenge(challengeId);
     }
     
-    @Get(':challengeId')
-    async getChallengeById(@Param('challengeId') challengeId: string) {
-        return this.challengeService.getChallengeById(challengeId);
-    }
     @Get()
     async getAllChallenges() {
         return this.challengeService.getAllChallenges();
     }
 
-    @Get ('challenge/me')
+    @Get ('me')
     async getMyChallenges(@Session() session: UserSession) {
         const userId = session.user.id;
         return this.challengeService.getChallengesByUserId(userId);
+    }
+    
+    @Get(':challengeId')
+    async getChallengeById(@Param('challengeId') challengeId: string) {
+        return this.challengeService.getChallengeById(challengeId);
     }
 }

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { BattleMode, BattleStatus, BattleVisibility } from "@prisma/client";
 import { DatabaseService } from "src/database/database.service";
 import { CreateBattleDto } from "./dto/create-battle.dto";
+import { UserService } from "src/user/user.service";
 
 
 const MAX_PLAYERS_BY_MODE: Record<BattleMode, number> = {
@@ -12,7 +13,7 @@ const MAX_PLAYERS_BY_MODE: Record<BattleMode, number> = {
 
 @Injectable()
 export class BattleService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(private readonly db: DatabaseService, private readonly userService: UserService) {}
 
   async createBattle(creatorId: string, dto: CreateBattleDto) {
     const maxPlayers = MAX_PLAYERS_BY_MODE[dto.mode];
@@ -47,6 +48,8 @@ export class BattleService {
     if (battle.players.some((p) => p.id === userId)) {
       throw new BadRequestException("Already joined");
     }
+    // update the player status to IN_BATTLE when they join a battle, using the user service
+    this.userService.updateStatus(userId, "IN_BATTLE");
 
     return this.db.battle.update({
       where: { bid: battleId },
@@ -59,6 +62,9 @@ export class BattleService {
     if (battle.status !== BattleStatus.WAITING) {
       throw new BadRequestException("Cannot leave a battle already in progress");
     }
+    // update the player status to ONLINE when they leave a battle, using the user service
+    this.userService.updateStatus(userId, "ONLINE");
+
     return this.db.battle.update({
       where: { bid: battleId },
       data: { players: { disconnect: { id: userId } } },

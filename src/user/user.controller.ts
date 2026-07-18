@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { UpdateProfileDto } from './dto/updateProfile.dto'
@@ -23,7 +23,7 @@ export class UserController {
         return this.userService.updateProfile(session.user.id, dto);
     }
 
-    @Patch('status')
+    @Post('status')
     updateStatus(@Session() session: UserSession, @Body('status') status: "ONLINE" | "OFFLINE" | "IN_BATTLE") {
         return this.userService.updateStatus(session.user.id, status);
     }
