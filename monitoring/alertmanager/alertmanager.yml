@@ -1,0 +1,23 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'gmail-notifications' # Matches the receiver name below
+
+receivers:
+- name: 'gmail-notifications'
+  email_configs:
+  - to: 'your-personal-email@gmail.com'       # Where you want to receive notifications
+    from: 'your-auth-email@gmail.com'         # Your sending Gmail address
+    smarthost: 'smtp.gmail.com:587'           # Official Google SMTP outbound server
+    auth_username: 'your-auth-email@gmail.com'
+    auth_identity: 'your-auth-email@gmail.com'
+    auth_password: 'your-16-character-app-password-here' # 👈 Paste token here
+    send_resolved: true                        # Sends a follow-up email when the service turns green again
+
+
+    

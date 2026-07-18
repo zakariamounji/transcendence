@@ -1,0 +1,30 @@
+groups:
+  - name: transcendence_alerts
+    rules:
+      - alert: DatabaseDown
+        expr: pg_up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL Database is DOWN"
+          description: "The database container has stopped responding or the exporter cannot reach it."
+
+      - alert: BackendDown
+        expr: up{job="nestjs-backend"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "NestJS Backend is DOWN"
+          description: "The backend service has crashed or is unreachable."
+
+      - alert: ContainerHighMemory
+        expr: (container_memory_working_set_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) * 100 > 85
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container running out of memory"
+          description: "Container {{ $labels.name }} is using more than 85% of its memory limit."
+
