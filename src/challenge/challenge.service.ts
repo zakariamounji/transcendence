@@ -9,10 +9,11 @@ export class ChallengeService {
 
     async createChallenge(createdById: string, dto: CreateChallengeDto) {
         return this.databaseService.$transaction(async (tx) => {
+            // zdt hadi hna
             const existingChallenge = await tx.challenge.findUnique({
                 where: { slug: dto.slug },
             });
-
+            // check it wach slug m duplicate o throw exception
             if (existingChallenge) {
                 throw new ConflictException('Challenge with this slug already exists');
             }
