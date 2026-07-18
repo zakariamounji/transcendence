@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable , ConflictException} from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateChallengeDto } from './dto/CreateChallenge.dto';
 import { UpdateChallengeDto } from './dto/UpdateChallenge.dto';
@@ -9,6 +9,14 @@ export class ChallengeService {
 
     async createChallenge(createdById: string, dto: CreateChallengeDto) {
         return this.databaseService.$transaction(async (tx) => {
+            const existingChallenge = await tx.challenge.findUnique({
+                where: { slug: dto.slug },
+            });
+
+            if (existingChallenge) {
+                throw new ConflictException('Challenge with this slug already exists');
+            }
+
             const challenge = await tx.challenge.create({
                 data: {
                     title: dto.title,
@@ -16,7 +24,10 @@ export class ChallengeService {
                     description: dto.description,
                     difficulty: dto.difficulty,
                     languages: dto.languages,
+                    subject: dto.subject,
+                    expectedOutput: dto.expectedOutput,
                     expReward: dto.expReward,
+                    timeLimitMin: dto.timeLimitMin,
                     createdById,
                 },
             });
@@ -41,6 +52,9 @@ export class ChallengeService {
                 difficulty: dto.difficulty,
                 languages: dto.languages,
                 expReward: dto.expReward,
+                subject: dto.subject,
+                expectedOutput: dto.expectedOutput,
+                timeLimitMin: dto.timeLimitMin,
             },
         });
     }

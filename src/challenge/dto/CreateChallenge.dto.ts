@@ -22,7 +22,18 @@ export class CreateChallengeDto {
   @IsEnum(Language, {each: true})
   languages!: Language[];
 
+  @IsString()
+  @MaxLength(1000)
+  subject!: string;
+
+  @IsString()
+  @MaxLength(1000)
+  expectedOutput!: string;
+
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  timeLimitMin?: number;
   @IsInt()
   @Min(1)
   expReward?: number;
