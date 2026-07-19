@@ -19,7 +19,7 @@ export class ChallengeController {
         return this.challengeService.createChallenge(createdById, dto);
     }
 
-    @Patch(':challengeId')
+    @Post(':challengeId')
     async updateChallenge(
         @Param('challengeId') challengeId: string,
         @Body() dto: UpdateChallengeDto
