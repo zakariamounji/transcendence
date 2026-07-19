@@ -2,7 +2,7 @@ groups:
   - name: transcendence_alerts
     rules:
       - alert: DatabaseDown
-        expr: pg_up == 0
+        expr: postgres == 0
         for: 30s
         labels:
           severity: critical
@@ -11,7 +11,7 @@ groups:
           description: "The database container has stopped responding or the exporter cannot reach it."
 
       - alert: BackendDown
-        expr: up{job="nestjs-backend"} == 0
+        expr: up{job="nestjs-backend-local"} == 0
         for: 30s
         labels:
           severity: critical
