@@ -50,12 +50,6 @@ enum Difficulty {
 enum Language {
   C
   CPP
-  JAVA
-  PYTHON
-  JAVASCRIPT
-  TYPESCRIPT
-  GO
-  RUST
 }
 
 model User {
