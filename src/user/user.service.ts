@@ -23,6 +23,27 @@ export class UserService {
     return this.db.user.update({ where: { id }, data: { status, lastSeen: new Date() } });
   }
 
+  findAllUsers() {
+    return this.db.user.findMany({
+      orderBy: {
+        globalRank: 'asc',
+      },
+      select: {
+        globalRank: true,
+        name: true,
+        email: true,
+        status: true,
+        level: true,
+        exp: true,
+        wins: true,
+        losses: true,
+        totalChallengesPlayed: true,
+        totalChallengesCreated: true,
+        lastSeen: true,
+      }
+    });
+  }
+
   // called after a battle resolves — not exposed as its own public endpoint
   applyBattleResult(id: string, won: boolean, expGained: number) {
     return this.db.user.update({

@@ -13,6 +13,11 @@ export class UserController {
         return this.userService.findUserById(session.user.id);
     }
 
+    @Get ('all')
+    getAllUsers() {
+        return this.userService.findAllUsers();
+    }
+
     @Get()
     getUser(@Session() session: UserSession) {
         return this.userService.findUserById(session.user.id);
