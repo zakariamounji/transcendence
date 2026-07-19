@@ -17,8 +17,8 @@ export class CreateChallengeDto {
   @IsEnum(Difficulty)
   difficulty!: Difficulty;
 
-  @IsArray()
-  @ArrayNotEmpty()
+  // @IsArray()
+  // @ArrayNotEmpty()
   @IsEnum(Language, {each: true})
   language!: Language;
 
