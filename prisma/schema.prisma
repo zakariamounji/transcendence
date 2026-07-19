@@ -182,6 +182,7 @@ model Challenge {
   cid String @id @unique @default(uuid())
 
   title       String
+  slug        String @unique
   description String
 
   difficulty Difficulty
