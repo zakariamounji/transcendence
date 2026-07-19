@@ -2,6 +2,7 @@ import { Injectable , ConflictException} from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateChallengeDto } from './dto/CreateChallenge.dto';
 import { UpdateChallengeDto } from './dto/UpdateChallenge.dto';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class ChallengeService {
@@ -58,7 +59,19 @@ export class ChallengeService {
             },
         });
     }
-    async deleteChallenge(challengeId: string) {
+    async deleteChallenge(challengeId: string, userId: string, userRole: UserRole) {
+        const challenge = await this.databaseService.challenge.findUnique({
+            where: { cid: challengeId },
+        });
+
+        if (!challenge) {
+            throw new Error('Challenge not found');
+        }
+
+        if (challenge.createdById !== userId && userRole !== UserRole.ADMIN) {
+            throw new Error('You do not have permission to delete this challenge');
+        }
+
         return this.databaseService.challenge.delete({
             where: { cid: challengeId },
         });

@@ -5,6 +5,7 @@ import { CreateChallengeDto } from './dto/CreateChallenge.dto';
 import { UpdateChallengeDto } from './dto/UpdateChallenge.dto';
 import { Session} from '@thallesp/nestjs-better-auth';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
+import { UserRole } from '@prisma/client';
 
 @Controller('challenges')
 export class ChallengeController {
@@ -28,8 +29,10 @@ export class ChallengeController {
     }
 
     @Delete(':challengeId')
-    async deleteChallenge(@Param('challengeId') challengeId: string) {
-        return this.challengeService.deleteChallenge(challengeId);
+    async deleteChallenge(@Session() session: UserSession, @Param('challengeId') challengeId: string) {
+        const userId = session.user.id;
+        const userRole = session.user.role as UserRole;
+        return this.challengeService.deleteChallenge(challengeId, userId, userRole);
     }
     
     @Get()
