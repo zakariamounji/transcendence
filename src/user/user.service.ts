@@ -28,19 +28,19 @@ export class UserService {
       orderBy: {
         globalRank: 'asc',
       },
-      select: {
-        globalRank: true,
-        name: true,
-        email: true,
-        status: true,
-        level: true,
-        exp: true,
-        wins: true,
-        losses: true,
-        totalChallengesPlayed: true,
-        totalChallengesCreated: true,
-        lastSeen: true,
-      }
+      // select: {
+      //   globalRank: true,
+      //   name: true,
+      //   email: true,
+      //   status: true,
+      //   level: true,
+      //   exp: true,
+      //   wins: true,
+      //   losses: true,
+      //   totalChallengesPlayed: true,
+      //   totalChallengesCreated: true,
+      //   lastSeen: true,
+      // }
     });
   }
 
