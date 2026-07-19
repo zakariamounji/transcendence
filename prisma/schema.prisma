@@ -181,7 +181,7 @@ model Challenge {
 
   difficulty Difficulty
 
-  languages Language[]
+  language Language
 
   expReward Int @default(6)
 

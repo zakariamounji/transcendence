@@ -25,7 +25,7 @@ export class UpdateChallengeDto {
     @IsArray()
     @ArrayNotEmpty()
     @IsEnum(Language, {each: true})
-    languages?: Language[];
+    language?: Language;
 
     @IsString()
     @MaxLength(1000)
