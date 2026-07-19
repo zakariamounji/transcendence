@@ -1,4 +1,4 @@
-import {IsString, MaxLength, IsEnum, IsArray, ArrayNotEmpty, IsOptional, IsInt, Min, Max} from 'class-validator';
+import {IsString, MaxLength, IsEnum, IsArray, ArrayNotEmpty, IsOptional, IsInt, Min, Max, IsBoolean} from 'class-validator';
 import {Difficulty, Language} from '@prisma/client';
 
 export class UpdateChallengeDto {
@@ -45,4 +45,7 @@ export class UpdateChallengeDto {
     @IsInt()
     @Min(1)
     timeLimitMin?: number;
+
+    @IsBoolean()
+    ispublic?: boolean;
 }
