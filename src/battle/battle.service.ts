@@ -91,6 +91,23 @@ export class BattleService {
     if (battle.status !== BattleStatus.RUNNING) {
       throw new BadRequestException("Battle is not running");
     }
+
+    // Update winner stats
+    if (winnerId) {
+      await this.userService.applyBattleResult(winnerId, true, battle.challenge.expReward);
+      // Set winner status back to ONLINE
+      await this.userService.updateStatus(winnerId, "ONLINE");
+    }
+
+    // Update loser stats for all other players
+    for (const player of battle.players) {
+      if (player.id !== winnerId) {
+        await this.userService.applyBattleResult(player.id, false, 0); // or give some consolation exp
+        // Set loser status back to ONLINE
+        await this.userService.updateStatus(player.id, "ONLINE");
+      }
+    }
+
     return this.db.battle.update({
       where: { bid: battleId },
       data: { status: BattleStatus.COMPLETED, endedAt: new Date(), winnerId },
@@ -124,7 +141,7 @@ export class BattleService {
   }
 
   private async findBattleOrThrow(battleId: string, include?: object) {
-    const battle = await this.db.battle.findUnique({ where: { bid: battleId }, include: {players: true} });
+    const battle = await this.db.battle.findUnique({ where: { bid: battleId }, include: {players: true, challenge: true} });
     if (!battle) throw new NotFoundException(`Battle ${battleId} not found`);
     return battle;
   }

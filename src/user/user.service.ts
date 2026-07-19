@@ -25,9 +25,12 @@ export class UserService {
 
   findAllUsers() {
     return this.db.user.findMany({
-      orderBy: {
-        globalRank: 'asc',
-      },
+      orderBy: [
+        { level: 'desc' },
+        { exp: 'desc' },
+        { wins: 'desc' },
+        // { globalRank: 'asc' },
+      ],
       // select: {
       //   globalRank: true,
       //   name: true,
@@ -45,15 +48,18 @@ export class UserService {
   }
 
   // called after a battle resolves — not exposed as its own public endpoint
-  applyBattleResult(id: string, won: boolean, expGained: number) {
-    return this.db.user.update({
+  async applyBattleResult(id: string, won: boolean, expGained: number) {
+    const user = await this.db.user.update({
       where: { id },
       data: {
         wins: won ? { increment: 1 } : undefined,
         losses: !won ? { increment: 1 } : undefined,
         exp: { increment: expGained },
         totalChallengesPlayed: {increment: 1},
+        level: { increment: Math.floor(expGained / 100) }, // Example leveling system: 100 exp per level
       },
     });
+
+    return user;
   }
 }
