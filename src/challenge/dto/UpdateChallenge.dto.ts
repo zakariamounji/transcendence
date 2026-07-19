@@ -27,14 +27,6 @@ export class UpdateChallengeDto {
     @IsEnum(Language, {each: true})
     language?: Language;
 
-    @IsString()
-    @MaxLength(1000)
-    subject!: string;
-
-    @IsString()
-    @MaxLength(1000)
-    expectedOutput!: string;
-
     @IsOptional()
     @IsInt()
     @Min(1)
@@ -47,5 +39,5 @@ export class UpdateChallengeDto {
     timeLimitMin?: number;
 
     @IsBoolean()
-    ispublic?: boolean;
+    isPublished?: boolean;
 }

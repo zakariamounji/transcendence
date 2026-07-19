@@ -53,10 +53,8 @@ export class ChallengeService {
                 difficulty: dto.difficulty,
                 language: dto.language,
                 expReward: dto.expReward,
-                subject: dto.subject,
-                expectedOutput: dto.expectedOutput,
                 timeLimitMin: dto.timeLimitMin,
-                isPublished: dto.ispublic,
+                isPublished: dto.isPublished,
             },
         });
     }
