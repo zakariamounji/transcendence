@@ -56,6 +56,7 @@ export class ChallengeService {
                 subject: dto.subject,
                 expectedOutput: dto.expectedOutput,
                 timeLimitMin: dto.timeLimitMin,
+                isPublished: dto.ispublic,
             },
         });
     }
