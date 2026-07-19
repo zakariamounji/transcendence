@@ -182,14 +182,13 @@ model Challenge {
   cid String @id @unique @default(uuid())
 
   title       String
-  slug        String @unique
   description String
 
   difficulty Difficulty
 
   languages Language[]
 
-  expReward Int @default(100)
+  expReward Int @default(6)
 
   isPublished Boolean @default(false)
 
@@ -199,7 +198,7 @@ model Challenge {
   subject String  @db.Text
   expectedOutput String @db.Text
 
-  timeLimitMin Int @default(5) // in minutes
+  timeLimitMin Int @default(15) // in minutes
   // Creator
   createdById String
   createdBy   User   @relation(fields: [createdById], references: [id])
