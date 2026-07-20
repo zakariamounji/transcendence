@@ -2,7 +2,7 @@ import { IsString, IsOptional } from "class-validator";
 
 export class JoinBattleDto {
   @IsString()
-  battleId: string;
+  battleId!: string;
 
   @IsOptional()
   @IsString()

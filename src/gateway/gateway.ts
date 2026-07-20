@@ -3,14 +3,19 @@ import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSo
 import { AuthGuard, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { Server, Socket } from 'socket.io';
 import { BattleService } from 'src/battle/battle.service';
+import { RustboxService } from './RustBox/rustbox.service';
 import { CreateBattleDto } from 'src/battle/dto/create-battle.dto';
 import { JoinBattleDto } from 'src/battle/dto/join-battle.dto';
-import { GatewayService } from './gateway.service';
+// import { GatewayService } from './gateway.service';
 
 @WebSocketGateway({ cors: { origin: 'http://localhost:8080', credentials: true } })
 @UseGuards(AuthGuard)
 export class MyGateway implements OnModuleInit {
-  constructor(private readonly battleService: BattleService, private readonly gatewayService: GatewayService) {}
+  constructor(
+    private readonly battleService: BattleService,
+    private readonly rustboxService: RustboxService,
+    /*private readonly gatewayService: GatewayService*/
+  ) {}
 
   @WebSocketServer()
   server: Server;
@@ -63,11 +68,31 @@ export class MyGateway implements OnModuleInit {
     return battle; // ack
   }
 
-  @SubscribeMessage('executeCode')
-  async onExecuteCode(@Session() session: UserSession, @MessageBody() data: { battleId: string; code: string }) {
-    const result = await this.gatewayService.executeCode(session.user.id, data.battleId, data.code);
+  // check hadchi m3a docs dyal Rustbox bach tfham l'implementation dyal runSubmission
+  @SubscribeMessage('submitCode')
+  async onSubmitCode(@Session() session: UserSession, @MessageBody() data: { battleId: string; language: string; code: string; stdin?: string }, @ConnectedSocket() client: Socket) {
+    this.server.to(data.battleId).emit('codeSubmitted', { userId: session.user.id, language: data.language, code: data.code });
+    const result = await this.rustboxService.runSubmission(data.language, data.code, data.stdin);
+    
+    if (!result || typeof result.verdict === 'undefined') {
+      this.server.to(data.battleId).emit('codeResult', { userId: session.user.id, result: { verdict: 'RE', stdout: '', stderr: 'Judge returned an invalid response' } });
+      return { verdict: 'RE', stdout: '', stderr: 'Judge returned an invalid response' }; // ack
+    }
+    if (result.verdict === 'AC') {
+      const expectedOutput = (await this.battleService.getBattleById(data.battleId)).challenge.expectedOutput;
+      const isOutputCorrect = await this.battleService.compareOutput(result.stdout, expectedOutput);
+      if (isOutputCorrect) {
+        const finishedBattle = await this.battleService.endBattle(data.battleId, session.user.id);
+        this.server.to(data.battleId).emit('battle:playerWon', { userId: session.user.id });
+        this.server.to(data.battleId).emit('battle:ended', { battle: finishedBattle });
+      } else {
+        this.server.to(data.battleId).emit('codeResult', { userId: session.user.id, result: { ...result, verdict: 'WA' } });
+      }
+    }
+    else {
 
-    this.server.to(data.battleId).emit('codeExecuted', { userId: session.user.id, result });
+        this.server.to(data.battleId).emit('codeResult', { userId: session.user.id, result });
+    }
     return result; // ack
   }
 }

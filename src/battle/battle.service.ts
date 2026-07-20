@@ -149,4 +149,10 @@ export class BattleService {
   private generateRoomCode(): string {
     return Math.random().toString(36).slice(2, 8).toUpperCase();
   }
+
+  async compareOutput(actualOutput: string, expectedOutput: string): Promise<boolean> {
+
+    const normalize = (output: string) => output.trim().replace(/\r\n/g, '\n').replace(/\s+/g, ' ');
+    return normalize(actualOutput) === normalize(expectedOutput);
+  }
 }

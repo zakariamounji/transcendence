@@ -3,14 +3,14 @@ import { BattleMode, BattleVisibility } from "@prisma/client";
 
 export class CreateBattleDto {
   @IsEnum(BattleMode)
-  mode: BattleMode;
+  mode!: BattleMode;
 
   @IsEnum(BattleVisibility)
   @IsOptional()
   visibility?: BattleVisibility = BattleVisibility.PUBLIC;
 
   @IsUUID()
-  challengeId: string;
+  challengeId!: string;
 
   @IsInt()
   @Min(60)
