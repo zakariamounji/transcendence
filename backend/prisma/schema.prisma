@@ -100,7 +100,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
-  @@map("user")
+  @@map("users")
 }
 
 // model ChatSession {

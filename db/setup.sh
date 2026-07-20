@@ -66,27 +66,6 @@ BEGIN
 END
 $$;
 
--- Remove stale users table/schema state so schema sync starts clean
-DROP TABLE IF EXISTS public.users CASCADE;
-DROP SEQUENCE IF EXISTS public.users_id_seq;
-
--- Create application table as zakaria
-SET SESSION AUTHORIZATION zakaria;
-
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    email varchar(255) NOT NULL UNIQUE,
-    password varchar(255) NOT NULL
-);
-
-ALTER TABLE public.users OWNER TO zakaria;
-ALTER SEQUENCE public.users_id_seq OWNER TO zakaria;
-
-INSERT INTO users (id, email, password) VALUES 
-(1, 'user@gmail.com', '1234567'),
-(2, 'zakaria@gmail.com', '1234567')
-ON CONFLICT (email) DO NOTHING;
-
 RESET SESSION AUTHORIZATION;
 EOF
 
