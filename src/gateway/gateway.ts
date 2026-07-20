@@ -67,7 +67,7 @@ export class MyGateway implements OnModuleInit {
   async onExecuteCode(@Session() session: UserSession, @MessageBody() data: { battleId: string; code: string }) {
     const result = await this.gatewayService.executeCode(session.user.id, data.battleId, data.code);
 
-    this.server.to(data.battleId).emit('battle:codeExecuted', { userId: session.user.id, result });
+    this.server.to(data.battleId).emit('codeExecuted', { userId: session.user.id, result });
     return result; // ack
   }
 }
