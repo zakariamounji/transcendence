@@ -34,7 +34,7 @@ export class BattleService {
   }
 
   async joinBattle(userId: string, battleId: string, roomCode?: string) {
-    const battle = await this.findBattleOrThrow(battleId, { players: true });
+    const battle = await this.findBattleOrThrow(battleId);
 
     if (battle.status !== BattleStatus.WAITING) {
       throw new BadRequestException("Battle is not accepting players");
@@ -72,7 +72,7 @@ export class BattleService {
   }
 
   async startBattle(userId: string, battleId: string) {
-    const battle = await this.findBattleOrThrow(battleId, { players: true });
+    const battle = await this.findBattleOrThrow(battleId);
     if (battle.creatorId !== userId) {
       throw new ForbiddenException("Only the creator can start the battle");
     }
@@ -129,7 +129,7 @@ export class BattleService {
   }
 
   getBattleById(battleId: string) {
-    return this.findBattleOrThrow(battleId, { players: true, creator: true, challenge: true });
+    return this.findBattleOrThrow(battleId);
   }
 
   getAllBattles(status?: BattleStatus) {
@@ -140,7 +140,7 @@ export class BattleService {
     });
   }
 
-  private async findBattleOrThrow(battleId: string, include?: object) {
+  async findBattleOrThrow(battleId: string) {
     const battle = await this.db.battle.findUnique({ where: { bid: battleId }, include: {players: true, challenge: true} });
     if (!battle) throw new NotFoundException(`Battle ${battleId} not found`);
     return battle;

@@ -5,11 +5,12 @@ import { Server, Socket } from 'socket.io';
 import { BattleService } from 'src/battle/battle.service';
 import { CreateBattleDto } from 'src/battle/dto/create-battle.dto';
 import { JoinBattleDto } from 'src/battle/dto/join-battle.dto';
+import { GatewayService } from './gateway.service';
 
 @WebSocketGateway({ cors: { origin: 'http://localhost:8080', credentials: true } })
 @UseGuards(AuthGuard)
 export class MyGateway implements OnModuleInit {
-  constructor(private readonly battleService: BattleService) {}
+  constructor(private readonly battleService: BattleService, private readonly gatewayService: GatewayService) {}
 
   @WebSocketServer()
   server: Server;
@@ -60,5 +61,13 @@ export class MyGateway implements OnModuleInit {
 
     this.server.to(data.battleId).emit('battle:ended', { battle });
     return battle; // ack
+  }
+
+  @SubscribeMessage('executeCode')
+  async onExecuteCode(@Session() session: UserSession, @MessageBody() data: { battleId: string; code: string }) {
+    const result = await this.gatewayService.executeCode(session.user.id, data.battleId, data.code);
+
+    this.server.to(data.battleId).emit('battle:codeExecuted', { userId: session.user.id, result });
+    return result; // ack
   }
 }
