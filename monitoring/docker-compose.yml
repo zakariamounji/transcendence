@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   prometheus:
     build: ./prometheus
@@ -8,25 +10,22 @@ services:
       - mynetwork
 
   alertmanager:
-      build: ./alertmanager
-      container_name: alertmanager
-      ports:
-        - "9093:9093"
-      networks:
-        - mynetwork
-
+    build: ./alertmanager
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - mynetwork
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
       - "3005:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+    env_file:
+      - .env
     networks:
       - mynetwork
-
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -54,6 +53,6 @@ services:
       - mynetwork
 
 networks:
-    mynetwork:
-      external: true
+  mynetwork:
+    external: true
 

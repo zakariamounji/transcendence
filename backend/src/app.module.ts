@@ -1,25 +1,16 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './auth.module';
+import { DatabaseModule } from './database/database.module';
+import { AuthModule } from 'src/auth/auth.module';
+import { UserModule } from './user/user.module';
+import { BattleModule } from './battle/battle.module';
+import { GatewayModule } from './gateway/gateway.module';
+import { changeEmail } from 'better-auth/api';
+import { ChallengeModule } from './challenge/challenge.module';
 
 @Module({
-  imports: [
-    PrometheusModule.register(),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'db',
-      port: 5432,
-      username: 'zakaria',
-      password: '1234',
-      database: 'freelancer',
-      autoLoadEntities: true,
-      synchronize: false,
-    }),
-    AuthModule,
-  ],
+  imports: [DatabaseModule, AuthModule, UserModule, BattleModule, GatewayModule, ChallengeModule],
   controllers: [AppController],
   providers: [AppService],
 })

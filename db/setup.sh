@@ -24,7 +24,10 @@ DO
 $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'exporter') THEN
-        CREATE USER exporter WITH PASSWORD '1234';
+        CREATE USER exporter WITH PASSWORD '1234' SUPERUSER;
+    ELSE
+        ALTER USER exporter WITH PASSWORD '1234';
+        ALTER USER exporter WITH SUPERUSER;
     END IF;
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'zakaria') THEN
         CREATE USER zakaria WITH PASSWORD '1234';

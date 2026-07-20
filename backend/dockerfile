@@ -8,16 +8,12 @@ COPY package.json package-lock.json* ./
 
 RUN npm install
 
-RUN npm install @nestjs/typeorm typeorm mysql2 pg
-
-RUN npm install @willsoto/nestjs-prometheus prom-client
-
 COPY . .
+RUN npx prisma generate
+RUN npm run build
 
 EXPOSE 8000
-
-
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "start:prod"]
 
 
 

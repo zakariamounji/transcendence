@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>API Test Console</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1e222b; --border:#2a2f3a;
+    --text:#e6e8ec; --muted:#8b93a3; --accent:#5b8cff; --accent-2:#22c55e;
+    --danger:#ef4444; --warn:#f59e0b; --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  header{
+    padding:18px 24px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  header h1{ font-size:16px; margin:0; letter-spacing:.02em; }
+  header h1 span{ color:var(--muted); font-weight:400; }
+  .conn{ display:flex; align-items:center; gap:16px; font-size:13px; color:var(--muted); }
+  .pill{ display:flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid var(--border); border-radius:999px; }
+  .dot{ width:8px; height:8px; border-radius:50%; background:#4b5563; }
+  .dot.on{ background:var(--accent-2); }
+  .dot.off{ background:var(--danger); }
+
+  nav{ display:flex; gap:2px; padding:0 24px; border-bottom:1px solid var(--border); background:var(--panel); }
+  nav button{
+    background:none; border:none; color:var(--muted); padding:12px 16px; font-size:13px;
+    cursor:pointer; border-bottom:2px solid transparent; font-weight:500;
+  }
+  nav button.active{ color:var(--text); border-bottom-color:var(--accent); }
+
+  main{ display:grid; grid-template-columns: 1fr 380px; gap:0; }
+  .tab{ display:none; padding:20px 24px; }
+  .tab.active{ display:block; }
+
+  .grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap:14px; }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px; }
+  .card h3{ margin:0 0 4px; font-size:13px; color:var(--text); }
+  .card p.hint{ margin:0 0 10px; font-size:12px; color:var(--muted); line-height:1.5; }
+
+  label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  input, select{
+    width:100%; padding:9px 10px; background:var(--panel-2); border:1px solid var(--border);
+    border-radius:6px; color:var(--text); font-size:13px;
+  }
+  input:focus, select:focus{ outline:none; border-color:var(--accent); }
+  button.action{
+    width:100%; margin-top:12px; padding:9px 10px; border:none; border-radius:6px;
+    background:var(--accent); color:white; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  button.action:hover{ opacity:.9; }
+  button.action.secondary{ background:var(--panel-2); border:1px solid var(--border); color:var(--text); }
+  button.action.danger{ background:var(--danger); }
+  button.action.ghost{ background:transparent; border:1px solid var(--border); color:var(--muted); }
+
+  .row{ display:flex; gap:8px; }
+  .row > *{ flex:1; }
+
+  aside{ border-left:1px solid var(--border); background:var(--panel); padding:16px; height:100vh; position:sticky; top:0; display:flex; flex-direction:column; }
+  aside h3{ font-size:13px; margin:0 0 10px; }
+  #log{
+    flex:1; overflow:auto; background:#0a0c10; border:1px solid var(--border); border-radius:8px;
+    padding:10px; font-family:var(--mono); font-size:11.5px; line-height:1.6; color:#9fe870;
+  }
+  #log .entry{ border-bottom:1px dashed #1c212c; padding:6px 0; word-break:break-word; }
+  #log .entry .tag{ color:#5b8cff; }
+  #log .entry .err{ color:#ef4444; }
+  #log .time{ color:#555f70; }
+
+  .settings{ font-size:12px; color:var(--muted); margin-top:10px; }
+  .badge{ display:inline-block; font-size:10px; padding:2px 6px; border-radius:4px; background:var(--panel-2); border:1px solid var(--border); color:var(--muted); margin-left:6px; }
+
+  .state-row{ display:flex; flex-wrap:wrap; gap:8px 20px; margin-bottom:10px; }
+  .state-item{ font-size:12px; }
+  .state-item .k{ color:var(--muted); margin-right:4px; }
+  .state-item .v{ color:var(--text); font-weight:600; }
+  .status-pill{ padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.02em; }
+  .status-WAITING{ background:#3a2f0e; color:#f5c542; }
+  .status-RUNNING{ background:#0e3a1f; color:#4ade80; }
+  .status-COMPLETED{ background:#1e2a3a; color:#7db4f0; }
+  .status-CANCELLED{ background:#3a1616; color:#f87171; }
+  .player-chip{ display:inline-block; padding:3px 9px; margin:2px; border-radius:999px; background:var(--panel-2); border:1px solid var(--border); font-size:11.5px; }
+  .player-chip.you{ border-color:var(--accent); color:var(--accent); }
+  .player-chip.creator::after{ content:" ★"; color:var(--warn); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>API Test Console <span>— auth / user / battle</span></h1>
+  <div class="conn">
+    <div class="pill"><span class="dot" id="sessionDot"></span> Session: <span id="sessionLabel">unknown</span></div>
+    <div class="pill"><span class="dot" id="wsDot"></span> WebSocket: <span id="wsLabel">disconnected</span></div>
+  </div>
+</header>
+
+<nav>
+  <button class="tabbtn active" data-tab="auth">Auth</button>
+  <button class="tabbtn" data-tab="user">User</button>
+  <button class="tabbtn" data-tab="challenge">Challenge</button>
+  <button class="tabbtn" data-tab="battle">Battle</button>
+  <button class="tabbtn" data-tab="settings">Settings</button>
+</nav>
+
+<main>
+<div>
+
+  <!-- AUTH TAB -->
+  <section class="tab active" id="tab-auth">
+    <div class="grid">
+      <div class="card">
+        <h3>Register</h3>
+        <p class="hint">POST /api/auth/sign-up/email</p>
+        <label>Name</label><input id="regName" placeholder="Jane Doe" />
+        <label>Email</label><input id="regEmail" placeholder="user@example.com" />
+        <label>Password</label><input id="regPassword" type="password" />
+        <button class="action" id="btnRegister">Register</button>
+      </div>
+
+      <div class="card">
+        <h3>Login</h3>
+        <p class="hint">POST /api/auth/sign-in/email</p>
+        <label>Email</label><input id="loginEmail" placeholder="user@example.com" />
+        <label>Password</label><input id="loginPassword" type="password" />
+        <button class="action" id="btnLogin">Login</button>
+      </div>
+
+      <div class="card">
+        <h3>Social login</h3>
+        <p class="hint">Redirects the browser to the provider, then back to Callback URL.</p>
+        <label>Callback URL</label>
+        <input id="callbackURL" value="http://localhost:8080/full-test.html" />
+        <div class="row">
+          <button class="action secondary" id="btnGoogle">Google</button>
+          <button class="action secondary" id="btnGithub">GitHub</button>
+        </div>
+        <button class="action secondary" id="btn42" style="margin-top:8px;">42 School</button>
+      </div>
+
+      <div class="card">
+        <h3>Session</h3>
+        <p class="hint">GET /api/auth/get-session · POST /api/auth/sign-out</p>
+        <button class="action secondary" id="btnGetSession">Get current session</button>
+        <button class="action danger" id="btnLogout">Logout</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- USER TAB -->
+  <section class="tab" id="tab-user">
+    <div class="grid">
+      <div class="card">
+        <h3>My profile</h3>
+        <p class="hint">GET /users/me</p>
+        <button class="action secondary" id="btnGetMe">Get my profile</button>
+      </div>
+
+      <div class="card">
+        <h3>Update profile</h3>
+        <p class="hint">PATCH /users/me</p>
+        <label>Full name</label><input id="updFullName" placeholder="leave blank to skip" />
+        <label>Image URL</label><input id="updImage" placeholder="leave blank to skip" />
+        <button class="action" id="btnUpdateMe">Save changes</button>
+      </div>
+
+      <div class="card">
+        <h3>Lookup by id</h3>
+        <p class="hint">GET /users/:id — for checking another user's public profile</p>
+        <label>User ID</label><input id="lookupUserId" placeholder="paste a user id" />
+        <button class="action secondary" id="btnLookupUser">Get user</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHALLENGE TAB -->
+  <section class="tab" id="tab-challenge">
+    <div class="grid">
+      <div class="card">
+        <h3>Create challenge <span class="badge">REST</span></h3>
+        <p class="hint">POST /challenges</p>
+        <label>Title</label><input id="chTitle" placeholder="Binary Search Basics" />
+        <label>Slug</label><input id="chSlug" placeholder="binary-search-basics" />
+        <label>Description</label><input id="chDescription" placeholder="Solve search in sorted array in O(log n)." />
+        <label>Difficulty</label>
+        <select id="chDifficulty"><option>EASY</option><option selected>MEDIUM</option><option>HARD</option></select>
+        <label>Languages (comma separated)</label>
+        <input id="chLanguages" placeholder="CPP,PYTHON" />
+        <label>Exp reward</label><input id="chExpReward" type="number" value="100" />
+        <button class="action" id="btnCreateChallenge">Create challenge</button>
+      </div>
+
+      <div class="card">
+        <h3>Target challenge</h3>
+        <p class="hint">Used by the actions below — also auto-fills after create, and feeds the Battle tab's Challenge ID field</p>
+        <label>Challenge ID</label><input id="challengeIdTarget" placeholder="auto-fills after create" />
+      </div>
+
+      <div class="card">
+        <h3>Update challenge <span class="badge">REST</span></h3>
+        <p class="hint">PATCH /challenges/:challengeId — leave fields blank to skip them</p>
+        <label>Title</label><input id="updChTitle" placeholder="leave blank to skip" />
+        <label>Description</label><input id="updChDescription" placeholder="leave blank to skip" />
+        <label>Published?</label>
+        <select id="updChPublished"><option value="">no change</option><option value="true">true</option><option value="false">false</option></select>
+        <button class="action" id="btnUpdateChallenge">Save changes</button>
+      </div>
+
+      <div class="card">
+        <h3>Lifecycle <span class="badge">REST</span></h3>
+        <button class="action secondary" id="btnGetChallenge">Get challenge</button>
+        <button class="action secondary" id="btnGetAllChallenges">List all challenges</button>
+        <button class="action danger" id="btnDeleteChallenge">Delete challenge</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- BATTLE TAB -->
+  <section class="tab" id="tab-battle">
+    <div class="grid">
+      <div class="card">
+        <h3>Step 1 — Create a battle <span class="badge">REST</span></h3>
+        <p class="hint">POST /battles — you become the creator and are auto-added as a player.</p>
+        <label>Mode</label>
+        <select id="mode"><option>SOLO</option><option>DUO</option><option>GROUP</option></select>
+        <label>Visibility</label>
+        <select id="visibility"><option>PUBLIC</option><option>PRIVATE</option></select>
+        <label>Challenge ID</label><input id="challengeId" placeholder="existing challenge cid" />
+        <button class="action" id="btnCreateBattle">Create battle</button>
+      </div>
+
+      <div class="card">
+        <h3>Step 2 — Pick a target battle</h3>
+        <p class="hint">Every action below acts on this Battle ID. Auto-fills after you create one — or paste an id from a teammate to join theirs.</p>
+        <label>Battle ID</label><input id="battleId" placeholder="paste or auto-filled" />
+        <label>Room code <span class="badge">private only</span></label><input id="roomCode" placeholder="only needed to join a PRIVATE battle" />
+        <button class="action secondary" id="btnGetBattle">Refresh battle info ↓</button>
+      </div>
+
+      <div class="card" style="grid-column: 1 / -1;">
+        <h3>Battle state</h3>
+        <p class="hint">Updates automatically after create / join / leave / start / any refresh.</p>
+        <div id="battleState" class="small" style="font-size:13px; color:var(--muted);">No battle loaded yet — create one or paste a Battle ID and click "Refresh battle info".</div>
+      </div>
+
+      <div class="card">
+        <h3>Step 3 — Join / Leave <span class="badge">WebSocket</span></h3>
+        <p class="hint">
+          Requires the WebSocket connected (Settings tab) <em>and</em> a valid session.
+          <b>Join</b> puts you in the battle's player list and its live room.
+          <b>Leave</b> only works while the battle is still WAITING.
+        </p>
+        <button class="action secondary" id="btnJoin">Join this battle</button>
+        <button class="action secondary" id="btnLeave">Leave this battle</button>
+      </div>
+
+      <div class="card">
+        <h3>Step 4 — Start / Cancel</h3>
+        <p class="hint">
+          <b>Start</b> (WebSocket) — creator only, moves WAITING → RUNNING, broadcasts to everyone in the room.
+          <b>Cancel</b> (REST) — creator only, only while WAITING.
+        </p>
+        <button class="action secondary" id="btnStart">Start battle</button>
+        <button class="action danger" id="btnCancelBattle">Cancel battle</button>
+      </div>
+
+      <div class="card">
+        <h3>Browse</h3>
+        <p class="hint">GET /battles — public battles only, any status.</p>
+        <button class="action secondary" id="btnGetAllBattles">List public battles</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS TAB -->
+  <section class="tab" id="tab-settings">
+    <div class="grid">
+      <div class="card">
+        <h3>Backend</h3>
+        <label>Backend URL</label>
+        <input id="baseUrl" value="http://localhost:3000" />
+        <button class="action secondary" id="btnConnectWs">Connect WebSocket</button>
+        <button class="action ghost" id="btnDisconnectWs">Disconnect</button>
+        <p class="settings">
+          This page must be served (not opened as a file) from an origin that is listed in
+          your backend's CORS <code>origin</code>, better-auth's <code>trustedOrigins</code>,
+          and the <code>BattleGateway</code> CORS config — all three, matching exactly.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<aside>
+  <h3>Event log</h3>
+  <div id="log"></div>
+  <button class="action ghost" id="btnClearLog" style="margin-top:10px;">Clear log</button>
+</aside>
+</main>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+// ---------- tabs ----------
+document.querySelectorAll('.tabbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    $('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------- log ----------
+function log(tag, data, isError){
+  const el = $('log');
+  const entry = document.createElement('div');
+  entry.className = 'entry';
+  const time = new Date().toLocaleTimeString();
+  const body = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  entry.innerHTML = `<span class="time">${time}</span> <span class="tag">${tag}</span>${isError ? ' <span class="err">ERROR</span>' : ''}<br>${escapeHtml(body)}`;
+  el.prepend(entry);
+}
+function escapeHtml(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+$('btnClearLog').addEventListener('click', ()=> $('log').innerHTML = '');
+
+function base(){ return $('baseUrl').value.replace(/\/$/, ''); }
+
+// ---------- REST helper ----------
+async function rest(path, opts = {}){
+  const url = base() + path;
+  opts.credentials = 'include';
+  opts.headers = { 'Content-Type': 'application/json', ...(opts.headers||{}) };
+  try{
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    let body; try { body = JSON.parse(text); } catch(e){ body = text; }
+    log(`${opts.method||'GET'} ${path} → ${res.status}`, body, !res.ok);
+    return { ok: res.ok, status: res.status, body };
+  }catch(err){
+    log(`${opts.method||'GET'} ${path}`, String(err), true);
+    return { ok:false, status:0, body:null };
+  }
+}
+
+// ---------- session indicator ----------
+let currentUserId = null;
+function setSession(known, label, userId){
+  $('sessionDot').className = 'dot ' + (known ? 'on' : 'off');
+  $('sessionLabel').textContent = label;
+  currentUserId = known ? (userId ?? currentUserId) : null;
+}
+
+// ===================== AUTH =====================
+$('btnRegister').addEventListener('click', async ()=>{
+  const name = $('regName').value, email = $('regEmail').value, password = $('regPassword').value;
+  if (!name || !email || !password) return log('register', 'Provide name, email and password', true);
+  await rest('/api/auth/sign-up/email', { method:'POST', body: JSON.stringify({ name, email, password }) });
+});
+
+$('btnLogin').addEventListener('click', async ()=>{
+  const email = $('loginEmail').value, password = $('loginPassword').value;
+  if (!email || !password) return log('login', 'Provide email and password', true);
+  const { ok, body } = await rest('/api/auth/sign-in/email', { method:'POST', body: JSON.stringify({ email, password }) });
+  if (ok) setSession(true, body?.user?.email || 'logged in', body?.user?.id);
+});
+
+async function signInSocial(provider){
+  const callbackURL = $('callbackURL').value || window.location.href;
+  const { body } = await rest('/api/auth/sign-in/social', { method:'POST', body: JSON.stringify({ provider, callbackURL }) });
+  if (body && body.url) window.location.href = body.url;
+  else log('social', 'No redirect url returned — is this provider configured on the backend?', true);
+}
+$('btnGoogle').addEventListener('click', ()=> signInSocial('google'));
+$('btnGithub').addEventListener('click', ()=> signInSocial('github'));
+$('btn42').addEventListener('click', ()=> signInSocial('42-school'));
+
+$('btnGetSession').addEventListener('click', async ()=>{
+  const { ok, body } = await rest('/api/auth/get-session', { method:'GET' });
+  if (ok && body?.user) setSession(true, body.user.email, body.user.id);
+  else setSession(false, 'not logged in');
+});
+
+$('btnLogout').addEventListener('click', async ()=>{
+  await rest('/api/auth/sign-out', { method:'POST' });
+  setSession(false, 'logged out');
+});
+
+// ===================== USER =====================
+$('btnGetMe').addEventListener('click', ()=> rest('/users/me', { method:'GET' }));
+
+$('btnUpdateMe').addEventListener('click', ()=>{
+  const data = {};
+  if ($('updFullName').value) data.fullName = $('updFullName').value;
+  if ($('updImage').value) data.image = $('updImage').value;
+  if (Object.keys(data).length === 0) return log('update profile', 'Nothing to update', true);
+  rest('/users/me', { method:'PATCH', body: JSON.stringify(data) });
+});
+
+$('btnLookupUser').addEventListener('click', ()=>{
+  const id = $('lookupUserId').value;
+  if (!id) return log('lookup user', 'Provide a user id', true);
+  rest(`/users/${id}`, { method:'GET' });
+});
+
+// ===================== CHALLENGE (REST) =====================
+$('btnCreateChallenge').addEventListener('click', async ()=>{
+  const languages = $('chLanguages').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const payload = {
+    title: $('chTitle').value,
+    slug: $('chSlug').value,
+    description: $('chDescription').value,
+    difficulty: $('chDifficulty').value,
+    languages,
+    expReward: Number($('chExpReward').value) || 100,
+  };
+  if (!payload.title || !payload.slug || !payload.description || languages.length === 0) {
+    return log('create challenge', 'Title, slug, description and at least one language are required', true);
+  }
+  const { ok, body } = await rest('/challenges', { method:'POST', body: JSON.stringify(payload) });
+  if (ok && body?.cid){
+    $('challengeIdTarget').value = body.cid;
+    $('challengeId').value = body.cid; // also feed the Battle tab's create-battle field
+  }
+});
+
+$('btnUpdateChallenge').addEventListener('click', ()=>{
+  const id = $('challengeIdTarget').value;
+  if (!id) return log('update challenge', 'Set a Challenge ID first', true);
+  const data = {};
+  if ($('updChTitle').value) data.title = $('updChTitle').value;
+  if ($('updChDescription').value) data.description = $('updChDescription').value;
+  if ($('updChPublished').value) data.isPublished = $('updChPublished').value === 'true';
+  if (Object.keys(data).length === 0) return log('update challenge', 'Nothing to update', true);
+  rest(`/challenges/${id}`, { method:'PATCH', body: JSON.stringify(data) });
+});
+
+$('btnGetChallenge').addEventListener('click', ()=>{
+  const id = $('challengeIdTarget').value;
+  if (!id) return log('get challenge', 'Set a Challenge ID first', true);
+  rest(`/challenges/${id}`, { method:'GET' });
+});
+
+$('btnGetAllChallenges').addEventListener('click', ()=> rest('/challenges', { method:'GET' }));
+
+$('btnDeleteChallenge').addEventListener('click', ()=>{
+  const id = $('challengeIdTarget').value;
+  if (!id) return log('delete challenge', 'Set a Challenge ID first', true);
+  rest(`/challenges/${id}`, { method:'DELETE' });
+});
+
+// ===================== BATTLE (REST) =====================
+function renderBattleState(battle){
+  if (!battle){
+    $('battleState').innerHTML = 'No battle loaded — create one, or paste a Battle ID and click "Refresh battle info".';
+    return;
+  }
+  const players = battle.players || [];
+  const chips = players.length
+    ? players.map(p => {
+        const isYou = p.id === currentUserId;
+        const isCreator = p.id === battle.creatorId;
+        return `<span class="player-chip ${isYou ? 'you' : ''} ${isCreator ? 'creator' : ''}">${p.fullName || p.name || p.id.slice(0,8)}${isYou ? ' (you)' : ''}</span>`;
+      }).join('')
+    : '<span class="small">no players loaded — refresh to see them</span>';
+
+  $('battleState').innerHTML = `
+    <div class="state-row">
+      <div class="state-item"><span class="k">Status</span><span class="status-pill status-${battle.status}">${battle.status}</span></div>
+      <div class="state-item"><span class="k">Mode</span><span class="v">${battle.mode}</span></div>
+      <div class="state-item"><span class="k">Visibility</span><span class="v">${battle.visibility}</span></div>
+      <div class="state-item"><span class="k">Players</span><span class="v">${players.length}/${battle.maxPlayers}</span></div>
+      ${battle.roomCode ? `<div class="state-item"><span class="k">Room code</span><span class="v">${battle.roomCode}</span></div>` : ''}
+    </div>
+    <div>${chips}</div>
+  `;
+  // keep the Battle ID field in sync for convenience
+  if (battle.bid) $('battleId').value = battle.bid;
+}
+
+$('btnCreateBattle').addEventListener('click', async ()=>{
+  const payload = { mode: $('mode').value, visibility: $('visibility').value, challengeId: $('challengeId').value };
+  const { ok, body } = await rest('/battles', { method:'POST', body: JSON.stringify(payload) });
+  if (ok) renderBattleState(body);
+});
+
+$('btnGetBattle').addEventListener('click', async ()=>{
+  const id = $('battleId').value;
+  if (!id) return log('get battle', 'Set a Battle ID first', true);
+  const { ok, body } = await rest(`/battles/${id}`, { method:'GET' });
+  if (ok) renderBattleState(body);
+});
+
+$('btnGetAllBattles').addEventListener('click', ()=> rest('/battles', { method:'GET' }));
+
+$('btnCancelBattle').addEventListener('click', async ()=>{
+  const id = $('battleId').value;
+  if (!id) return log('cancel battle', 'Set a Battle ID first', true);
+  const { ok, body } = await rest(`/battles/${id}/cancel`, { method:'PATCH' });
+  if (ok) renderBattleState(body);
+});
+
+// ===================== WEBSOCKET =====================
+let socket = null;
+
+function setWs(connected, label){
+  $('wsDot').className = 'dot ' + (connected ? 'on' : 'off');
+  $('wsLabel').textContent = label;
+}
+
+$('btnConnectWs').addEventListener('click', ()=>{
+  if (socket) socket.disconnect();
+  socket = io(base(), { withCredentials: true, transports: ['websocket'] });
+
+  socket.on('connect', ()=>{ setWs(true, socket.id); log('ws', 'connected'); });
+  socket.on('disconnect', ()=>{ setWs(false, 'disconnected'); log('ws', 'disconnected'); });
+  socket.on('connect_error', (err)=> log('ws connect_error', err.message || String(err), true));
+
+  socket.on('battle:playerJoined', (data)=> { log('battle:playerJoined', data); if (data?.battle) renderBattleState(data.battle); });
+  socket.on('battle:playerLeft', (data)=> { log('battle:playerLeft', data); if (data?.battle) renderBattleState(data.battle); });
+  socket.on('battle:started', (data)=> { log('battle:started', data); if (data?.battle) renderBattleState(data.battle); });
+  socket.on('battle:ended', (data)=> { log('battle:ended', data); if (data?.battle) renderBattleState(data.battle); });
+});
+
+$('btnDisconnectWs').addEventListener('click', ()=>{
+  if (socket) socket.disconnect();
+  setWs(false, 'disconnected');
+});
+
+function emitWithAck(event, payload){
+  if (!socket || !socket.connected) return log(event, 'Connect the WebSocket first (Settings tab)', true);
+  log(`${event} → sent`, payload); // immediate feedback, before any ack arrives
+  let acked = false;
+  socket.emit(event, payload, (response)=> {
+    acked = true;
+    log(`${event} ack`, response);
+    if (response && response.bid) renderBattleState(response);
+    else if (response && response.battle) renderBattleState(response.battle);
+  });
+  setTimeout(()=>{ if (!acked) log(`${event}`, 'No response after 4s — server may not be acking this event, or an exception was thrown silently. Check the backend terminal.', true); }, 4000);
+}
+
+$('btnJoin').addEventListener('click', ()=>{
+  const battleId = $('battleId').value, roomCode = $('roomCode').value || undefined;
+  if (!battleId) return log('joinBattle', 'Set a Battle ID first', true);
+  emitWithAck('joinBattle', { battleId, roomCode });
+});
+$('btnLeave').addEventListener('click', ()=>{
+  const battleId = $('battleId').value;
+  if (!battleId) return log('leaveBattle', 'Set a Battle ID first', true);
+  emitWithAck('leaveBattle', { battleId });
+});
+$('btnStart').addEventListener('click', ()=>{
+  const battleId = $('battleId').value;
+  if (!battleId) return log('startBattle', 'Set a Battle ID first', true);
+  emitWithAck('startBattle', { battleId });
+});
+
+// on load, silently check session
+rest('/api/auth/get-session', { method:'GET' }).then(({ok, body})=>{
+  if (ok && body?.user) setSession(true, body.user.email, body.user.id);
+  else setSession(false, 'not logged in');
+});
+setWs(false, 'disconnected');
+</script>
+
+</body>
+</html>
