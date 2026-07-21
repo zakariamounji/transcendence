@@ -6,10 +6,8 @@ services:
     container_name: db
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "1234"
-      POSTGRES_DB: "neondb"
+    env_file:
+      - ./db/.env
     volumes:
       - db_data:/var/lib/postgresql/15/main
     networks:
