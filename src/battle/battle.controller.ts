@@ -14,20 +14,20 @@ export class BattleController {
     return this.battleService.createBattle(session.user.id, dto);
   }
 
-  @Post(":battleId/join")
-  join(@Session() session: UserSession, @Param("battleId") battleId: string, @Body() dto: JoinBattleDto) {
-    return this.battleService.joinBattle(session.user.id, battleId, dto.roomCode);
-  }
+  // @Post(":battleId/join")
+  // join(@Session() session: UserSession, @Param("battleId") battleId: string, @Body() dto: JoinBattleDto) {
+  //   return this.battleService.joinBattle(session.user.id, battleId, dto.roomCode);
+  // }
 
-  @Post(":battleId/leave")
-  leave(@Session() session: UserSession, @Param("battleId") battleId: string) {
-    return this.battleService.leaveBattle(session.user.id, battleId);
-  }
+  // @Post(":battleId/leave")
+  // leave(@Session() session: UserSession, @Param("battleId") battleId: string) {
+  //   return this.battleService.leaveBattle(session.user.id, battleId);
+  // }
 
-  @Patch(":battleId/start")
-  start(@Session() session: UserSession, @Param("battleId") battleId: string) {
-    return this.battleService.startBattle(session.user.id, battleId);
-  }
+  // @Patch(":battleId/start")
+  // start(@Session() session: UserSession, @Param("battleId") battleId: string) {
+  //   return this.battleService.startBattle(session.user.id, battleId);
+  // }
 
   @Patch(":battleId/cancel")
   cancel(@Session() session: UserSession, @Param("battleId") battleId: string) {
@@ -35,13 +35,11 @@ export class BattleController {
   }
 
   @Get(":battleId")
-  @PublicRoute()
   getOne(@Param("battleId") battleId: string) {
     return this.battleService.getBattleById(battleId);
   }
 
-  @Get()
-  @PublicRoute()
+  @Get('all')
   getAll(@Query("status") status?: BattleStatus) {
     return this.battleService.getAllBattles(status);
   }

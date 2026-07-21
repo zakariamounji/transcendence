@@ -23,7 +23,7 @@ export class UserController {
         return this.userService.findUserById(session.user.id);
     }
 
-    @Patch()
+    @Patch('me')
     updateUser(@Session() session: UserSession, @Body() dto: UpdateProfileDto) {
         return this.userService.updateProfile(session.user.id, dto);
     }
