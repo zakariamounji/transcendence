@@ -7,7 +7,8 @@ export default function UserStatusProvider({
   children: React.ReactNode
 }) {
   useEffect(() => {
-    const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/user/status`
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
+    const url = `${backendUrl}/user/status`
 
     async function updateStatus(status: "ONLINE" | "OFFLINE") {
       try {

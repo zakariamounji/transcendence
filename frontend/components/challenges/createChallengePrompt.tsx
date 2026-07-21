@@ -49,7 +49,8 @@ export default function CreateChallengePrompt(): React.JSX.Element {
       return
     }
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/challenges`, {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
+    const res = await fetch(`${backendUrl}/challenges`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

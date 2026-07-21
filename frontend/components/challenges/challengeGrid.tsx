@@ -52,7 +52,8 @@ function ChallengeCard({ challenge, isAdmin, createdById }: { challenge: Challen
   }
 
   const publishChallenge = async () => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/challenges/${challenge.cid}`, {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
+    const res = await fetch(`${backendUrl}/challenges/${challenge.cid}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -71,7 +72,8 @@ function ChallengeCard({ challenge, isAdmin, createdById }: { challenge: Challen
   }
 
   const deleteChallenge = async () => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/challenges/${challenge.cid}`, {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
+    const res = await fetch(`${backendUrl}/challenges/${challenge.cid}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json"

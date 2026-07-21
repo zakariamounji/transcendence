@@ -8,10 +8,10 @@ import Ranking from "@/components/ranking"
 export default async function Home(): Promise<React.JSX.Element> {
 
   const [allRes, myRes, userData, rankingData] = await Promise.all([
-    myfetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/challenges`),
-    myfetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/challenges/me`),
-    myfetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/me`),
-    myfetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/user/all`)
+    myfetch("/challenges"),
+    myfetch("/challenges/me"),
+    myfetch("/user/me"),
+    myfetch("/user/all")
   ])
 
   if (!allRes.ok || !myRes.ok || !userData.ok || !rankingData.ok) {
