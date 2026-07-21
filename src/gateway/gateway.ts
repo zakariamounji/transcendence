@@ -6,6 +6,8 @@ import { BattleService } from 'src/battle/battle.service';
 import { RustboxService } from './RustBox/rustbox.service';
 import { CreateBattleDto } from 'src/battle/dto/create-battle.dto';
 import { JoinBattleDto } from 'src/battle/dto/join-battle.dto';
+import { stderr, stdout } from 'process';
+import { stat } from 'fs';
 // import { GatewayService } from './gateway.service';
 
 @WebSocketGateway({ cors: { origin: 'http://localhost:8080', credentials: true } })
@@ -73,14 +75,13 @@ export class MyGateway implements OnModuleInit {
   async onSubmitCode(@Session() session: UserSession, @MessageBody() data: { battleId: string; language: string; code: string; stdin?: string }, @ConnectedSocket() client: Socket) {
     this.server.to(data.battleId).emit('codeSubmitted', { userId: session.user.id, language: data.language, code: data.code });
     const result = await this.rustboxService.runSubmission(data.language, data.code, data.stdin);
-    
     if (!result || typeof result.verdict === 'undefined') {
       this.server.to(data.battleId).emit('codeResult', { userId: session.user.id, result: { verdict: 'RE', stdout: '', stderr: 'Judge returned an invalid response' } });
       return { verdict: 'RE', stdout: '', stderr: 'Judge returned an invalid response' }; // ack
     }
     if (result.verdict === 'AC') {
       const expectedOutput = (await this.battleService.getBattleById(data.battleId)).challenge.expectedOutput;
-      const isOutputCorrect = await this.battleService.compareOutput(result.stdout, expectedOutput);
+      const isOutputCorrect = await this.battleService.compareOutput(result.stdout ?? '', expectedOutput);
       if (isOutputCorrect) {
         const finishedBattle = await this.battleService.endBattle(data.battleId, session.user.id);
         this.server.to(data.battleId).emit('battle:playerWon', { userId: session.user.id });
@@ -93,6 +94,12 @@ export class MyGateway implements OnModuleInit {
 
         this.server.to(data.battleId).emit('codeResult', { userId: session.user.id, result });
     }
-    return result; // ack
+    return {
+      stderr: result.stderr,
+      stdout: result.stdout,
+      statusCode: result.statusCode,
+      cause: result.cause,
+      error_message: result.error_message,
+    }; // ack
   }
 }

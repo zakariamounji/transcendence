@@ -9,7 +9,7 @@ import { BattleStatus } from "@prisma/client";
 export class BattleController {
   constructor(private readonly battleService: BattleService) {}
 
-  @Post()
+  @Post('create')
   create(@Session() session: UserSession, @Body() dto: CreateBattleDto) {
     return this.battleService.createBattle(session.user.id, dto);
   }

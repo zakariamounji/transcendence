@@ -584,7 +584,7 @@ function emitWithAck(event, payload){
     if (response && response.bid) renderBattleState(response);
     else if (response && response.battle) renderBattleState(response.battle);
   });
-  setTimeout(()=>{ if (!acked) log(`${event}`, 'No response after 4s — server may not be acking this event, or an exception was thrown silently. Check the backend terminal.', true); }, 4000);
+  setTimeout(()=>{ if (!acked) log(`${event}`, 'No response after 4s — server may not be acking this event, or an exception was thrown silently. Check the backend terminal.', true); }, 8000);
 }
 
 $('btnJoin').addEventListener('click', ()=>{
