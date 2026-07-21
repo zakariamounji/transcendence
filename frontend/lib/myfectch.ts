@@ -8,8 +8,7 @@ function resolveBackendUrl(url: string): string {
 
   const baseUrl =
     process.env.INTERNAL_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    "http://localhost:3000"
+    process.env.NEXT_PUBLIC_BACKEND_URL
 
   return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`
 }
