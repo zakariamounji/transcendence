@@ -1,27 +1,10 @@
 #!/bin/bash
 set -e
 
-# 1. Initialize the database folder if it hasn't been done yet
-if [ ! -d "/var/lib/postgresql/15/main/base" ]; then
-    echo "Initializing database cluster..."
-    /usr/lib/postgresql/15/bin/initdb -D /var/lib/postgresql/15/main
-fi
-
-echo "Starting temporary database instance..."
-/usr/lib/postgresql/15/bin/pg_ctl -D /var/lib/postgresql/15/main \
-    -o "-c config_file=/etc/postgresql/15/main/postgresql.conf" \
-    -l /tmp/postgres_init.log start
-
-echo "Waiting for database to be ready..."
-while ! /usr/lib/postgresql/15/bin/pg_isready -q; do
-    sleep 1
-done
-
-echo "Database is ready. Running configuration queries..."
-
-/usr/lib/postgresql/15/bin/psql -U postgres <<'EOF'
+# The official image passes POSTGRES_USER (default: postgres) to psql automatically.
+psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" <<-EOSQL
 DO
-$$
+\$\$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'exporter') THEN
         CREATE USER exporter WITH PASSWORD '1234' SUPERUSER;
@@ -35,7 +18,7 @@ BEGIN
         ALTER USER zakaria WITH PASSWORD '1234';
     END IF;
 END
-$$;
+\$\$;
 
 SELECT 'CREATE DATABASE freelancer OWNER zakaria'
 WHERE NOT EXISTS (SELECT FROM pg_catalog.pg_database WHERE datname = 'freelancer')
@@ -43,7 +26,7 @@ WHERE NOT EXISTS (SELECT FROM pg_catalog.pg_database WHERE datname = 'freelancer
 
 ALTER DATABASE freelancer OWNER TO zakaria;
 
--- Connect to the freelancer database and fix ownership/privileges
+-- Connect to the freelancer database and set permissions
 \c freelancer;
 
 GRANT ALL PRIVILEGES ON DATABASE freelancer TO zakaria;
@@ -52,7 +35,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO zaka
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO zakaria;
 
 DO
-$$
+\$\$
 DECLARE
     tbl record;
     seq record;
@@ -64,16 +47,7 @@ BEGIN
         EXECUTE format('ALTER SEQUENCE public.%I OWNER TO zakaria', seq.sequence_name);
     END LOOP;
 END
-$$;
+\$\$;
 
 RESET SESSION AUTHORIZATION;
-EOF
-
-# 5. Stop the background instance cleanly using full path
-echo "Stopping temporary database instance..."
-/usr/lib/postgresql/15/bin/pg_ctl -D /var/lib/postgresql/15/main -m fast stop
-
-# 6. Start the permanent database foreground process using full path
-echo "Starting database server as main process..."
-exec /usr/lib/postgresql/15/bin/postgres -D /var/lib/postgresql/15/main -c config_file=/etc/postgresql/15/main/postgresql.conf
-
+EOSQL
