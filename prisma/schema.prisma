@@ -215,7 +215,7 @@ model Battle {
 
   roomCode String?
 
-  durationSeconds Int @default(1160)
+  durationSeconds Int @default(1160) // i9der itheyed
 
   createdAt DateTime  @default(now())
   startedAt DateTime?

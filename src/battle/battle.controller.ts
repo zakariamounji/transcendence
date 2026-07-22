@@ -40,7 +40,7 @@ export class BattleController {
   }
 
   @Get('all')
-  getAll(@Query("status") status?: BattleStatus) {
-    return this.battleService.getAllBattles(status);
+  getAll() {
+    return this.battleService.getAllBattles();
   }
 }

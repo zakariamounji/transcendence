@@ -132,9 +132,8 @@ export class BattleService {
     return this.findBattleOrThrow(battleId);
   }
 
-  getAllBattles(status?: BattleStatus) {
+  getAllBattles() {
     return this.db.battle.findMany({
-      where: { visibility: BattleVisibility.PUBLIC, ...(status && { status }) },
       include: { creator: true, players: true },
       orderBy: { createdAt: "desc" },
     });
