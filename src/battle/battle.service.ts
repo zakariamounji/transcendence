@@ -16,28 +16,32 @@ export class BattleService {
   constructor(private readonly db: DatabaseService, private readonly userService: UserService) {}
 
   async createBattle(creatorId: string, dto: CreateBattleDto) {
+  const maxPlayers = MAX_PLAYERS_BY_MODE[dto.mode];
+  const roomCode = dto.visibility === BattleVisibility.PRIVATE ? this.generateRoomCode() : null;
 
-    const creator = await this.userService.findUserById(creatorId);
-    if (creator.status === UserStatus.IN_BATTLE) {
-      throw new BadRequestException("You are already in another battle");
-    }
+  // Use a transaction to ensure that the user is not already in another battle when creating a new one, and to lock the user row for update to prevent race conditions.
+  return this.db.$transaction(async (tx) => {
+      const locked = await tx.user.updateMany({
+        where: { id: creatorId, status: { not: UserStatus.IN_BATTLE } },
+        data: { status: UserStatus.IN_BATTLE },
+      });
 
-    const maxPlayers = MAX_PLAYERS_BY_MODE[dto.mode];
-    const roomCode = dto.visibility === BattleVisibility.PRIVATE ? this.generateRoomCode() : null;
+      if (locked.count === 0) {
+        throw new BadRequestException("You are already in another battle");
+      }
 
-    this.userService.updateStatus(creatorId, "IN_BATTLE");
-
-    return this.db.battle.create({
-      data: {
-        mode: dto.mode,
-        visibility: dto.visibility ?? BattleVisibility.PUBLIC,
-        maxPlayers,
-        roomCode,
-        durationSeconds: dto.durationSeconds ?? 1160,
-        creatorId,
-        challengeId: dto.challengeId,
-        players: { connect: { id: creatorId } }, // creator auto-joins, connect: it is the one that actually creates the relation between the battle and the user
-      },
+      return tx.battle.create({
+        data: {
+          mode: dto.mode,
+          visibility: dto.visibility ?? BattleVisibility.PUBLIC,
+          maxPlayers,
+          roomCode,
+          durationSeconds: dto.durationSeconds ?? 900,
+          creatorId,
+          challengeId: dto.challengeId,
+          players: { connect: { id: creatorId } },
+        },
+      });
     });
   }
 
