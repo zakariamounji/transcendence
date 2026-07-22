@@ -41,7 +41,9 @@ services:
     networks:
       - mynetwork
 
-
+volumes:
+  db_data:
+    driver: local
 
 networks:
   mynetwork:
