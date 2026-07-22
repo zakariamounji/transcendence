@@ -16,8 +16,16 @@ export class BattleService {
   constructor(private readonly db: DatabaseService, private readonly userService: UserService) {}
 
   async createBattle(creatorId: string, dto: CreateBattleDto) {
+
+    const creator = await this.userService.findUserById(creatorId);
+    if (creator.status === UserStatus.IN_BATTLE) {
+      throw new BadRequestException("You are already in another battle");
+    }
+
     const maxPlayers = MAX_PLAYERS_BY_MODE[dto.mode];
     const roomCode = dto.visibility === BattleVisibility.PRIVATE ? this.generateRoomCode() : null;
+
+    this.userService.updateStatus(creatorId, "IN_BATTLE");
 
     return this.db.battle.create({
       data: {
