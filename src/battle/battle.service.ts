@@ -165,8 +165,9 @@ export class BattleService {
     return this.db.battle.findFirst({
       where: {
         players: { some: { id: userId } },
-        status: { in: [BattleStatus.WAITING, BattleStatus.RUNNING] },
+        status: { in: [BattleStatus.WAITING, BattleStatus.RUNNING]},
       },
+      include: { players: true, challenge: true },
     });
   }
 
