@@ -45,5 +45,7 @@ volumes:
   db_data:
     driver: local
 
-
+networks:
+  mynetwork:
+    external: true
 
