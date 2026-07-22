@@ -1,4 +1,4 @@
-import { Injectable , ConflictException} from '@nestjs/common';
+import { Injectable , ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateChallengeDto } from './dto/CreateChallenge.dto';
 import { UpdateChallengeDto } from './dto/UpdateChallenge.dto';
@@ -65,16 +65,16 @@ export class ChallengeService {
         });
 
         if (!challenge) {
-            throw new Error('Challenge not found');
+            throw new NotFoundException('Challenge not found');
         }
 
-        if (challenge.createdById !== userId && userRole !== UserRole.ADMIN) {
-            throw new Error('You do not have permission to delete this challenge');
+        if (challenge.createdById === userId || userRole === UserRole.ADMIN) {
+            return this.databaseService.challenge.delete({
+                where: { cid: challengeId },
+            });
         }
-
-        return this.databaseService.challenge.delete({
-            where: { cid: challengeId },
-        });
+        
+        throw new ForbiddenException('You do not have permission to delete this challenge');
     }
 
     async getChallengeById(challengeId: string) {
