@@ -23,10 +23,12 @@ export class UserService {
     return this.db.user.update({ where: { id }, data: { status, lastSeen: new Date() } });
   }
 
-  updateStatusFront(id: string, status: UserStatus) {
-    if (status === UserStatus.IN_BATTLE) {
+  async updateStatusFront(id: string, status: UserStatus) {
+    const U = await this.findUserById(id)
+    if (!U)
+      throw new NotFoundException(`User with id ${id} not found`);
+    if (U.status === UserStatus.IN_BATTLE)
       throw new Error("Cannot set status to IN_BATTLE directly. Use the battle endpoints instead.");
-    }
     return this.db.user.update({ where: { id }, data: { status, lastSeen: new Date() } });
   }
 
