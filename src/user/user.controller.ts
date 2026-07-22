@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { UpdateProfileDto } from './dto/updateProfile.dto'
@@ -18,10 +18,15 @@ export class UserController {
         return this.userService.findAllUsers();
     }
 
-    @Get()
-    getUser(@Session() session: UserSession) {
-        return this.userService.findUserById(session.user.id);
-    }
+    // @Get (':userId')
+    // getUser(@Param('userId') userId: string) {
+    //     return this.userService.findUserById(userId);
+    // }
+
+    // @Get()
+    // getUser(@Session() session: UserSession) {
+    //     return this.userService.findUserById(session.user.id);
+    // }
 
     @Patch('me')
     updateUser(@Session() session: UserSession, @Body() dto: UpdateProfileDto) {
