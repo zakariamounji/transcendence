@@ -24,6 +24,8 @@ services:
       - "3005:3000"
     env_file:
       - .env
+    volumes:
+      - grafana_data:/var/lib/grafana
     networks:
       - mynetwork
 
@@ -55,4 +57,7 @@ services:
 networks:
   mynetwork:
     external: true
+
+volumes:
+  grafana_data:
 
