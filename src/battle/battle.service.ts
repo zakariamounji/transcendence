@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from "@nestjs/common";
-import { BattleMode, BattleStatus, BattleVisibility } from "@prisma/client";
+import { BattleMode, BattleStatus, BattleVisibility, UserStatus } from "@prisma/client";
 import { DatabaseService } from "src/database/database.service";
 import { CreateBattleDto } from "./dto/create-battle.dto";
 import { UserService } from "src/user/user.service";
@@ -35,6 +35,11 @@ export class BattleService {
 
   async joinBattle(userId: string, battleId: string, roomCode?: string) {
     const battle = await this.findBattleOrThrow(battleId);
+    const user = await this.userService.findUserById(userId);
+
+    if (user.status === UserStatus.IN_BATTLE) {
+      throw new BadRequestException("You are already in another battle");
+    }
 
     if (battle.status !== BattleStatus.WAITING) {
       throw new BadRequestException("Battle is not accepting players");
