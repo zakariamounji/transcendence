@@ -23,6 +23,13 @@ export class UserService {
     return this.db.user.update({ where: { id }, data: { status, lastSeen: new Date() } });
   }
 
+  updateStatusFront(id: string, status: UserStatus) {
+    if (status === UserStatus.IN_BATTLE) {
+      throw new Error("Cannot set status to IN_BATTLE directly. Use the battle endpoints instead.");
+    }
+    return this.db.user.update({ where: { id }, data: { status, lastSeen: new Date() } });
+  }
+
   findAllUsers() {
     return this.db.user.findMany({
       orderBy: [
