@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { DatabaseService } from "src/database/database.service";
 import { UpdateProfileDto } from "./dto/updateProfile.dto";
-import { UserStatus } from "@prisma/client";
+import { BattleStatus, UserStatus } from "@prisma/client";
 
 @Injectable()
 export class UserService {
   constructor(private readonly db: DatabaseService) {}
 
   findUserById(id: string) {
-    return this.db.user.findUniqueOrThrow({ where: { id } });
+    return this.db.user.findUniqueOrThrow({ where: { id }, include: {joinedBattles: true} });
   }
 
   findByEmail(email: string) {

@@ -33,6 +33,11 @@ export class BattleController {
   cancel(@Session() session: UserSession, @Param("battleId") battleId: string) {
     return this.battleService.cancelBattle(session.user.id, battleId);
   }
+
+  @Get ('current')
+  getCurrentBattle(@Session() session: UserSession) {
+    return this.battleService.getCurrentBattle(session.user.id);
+  }
   
   @Get('all')
   getAll() {

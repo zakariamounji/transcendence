@@ -134,7 +134,7 @@ export class BattleService {
 
   getAllBattles() {
     return this.db.battle.findMany({
-      include: { creator: true, players: true },
+      include: { creator: true, players: true, challenge: true },
       orderBy: { createdAt: "desc" },
     });
   }
@@ -154,4 +154,15 @@ export class BattleService {
     const normalize = (output: string) => output.trim().replace(/\r\n/g, '\n').replace(/\s+/g, ' ');
     return normalize(actualOutput) === normalize(expectedOutput);
   }
+
+
+  async getCurrentBattle(userId: string) {
+    return this.db.battle.findFirst({
+      where: {
+        players: { some: { id: userId } },
+        status: { in: [BattleStatus.WAITING, BattleStatus.RUNNING] },
+      },
+    });
+  }
+
 }
