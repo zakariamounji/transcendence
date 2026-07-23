@@ -86,7 +86,7 @@ export class BattleService {
     // what is transaction?: it allows you to perform multiple database operations as a single unit of work. If any operation fails, the entire transaction is rolled back, ensuring data integrity.
     // and if another request to leav the battle comes in the middle of this transaction, it will wait until the transaction is complete before proceeding.
     return this.db.$transaction(async (tx) => {
-      // status to online.
+      // status form IN_BATTLE to ONLINE.
       await tx.user.update({
         where: { id: userId },
         data: { status: UserStatus.ONLINE },
@@ -97,47 +97,23 @@ export class BattleService {
         data: { players: { disconnect: { id: userId } } },
         include: { players: true },
       });
-
-      // no one left at all — clean up the battle regardless of status
+      // if the battle has no more players, delete it
       if (updated.players.length === 0) {
         await tx.battle.delete({ where: { bid: battleId } });
         return null;
       }
-
-      // battle was in progress and now only one player remains — they win by default
-      if (battle.status === BattleStatus.RUNNING && updated.players.length === 1) {
-        const winner = updated.players[0];
-
-        await tx.user.update({
-          where: { id: userId },
-          data: { status: UserStatus.ONLINE,
-            wins: { increment: 1 } },
-        });
-
-        return tx.battle.update({
-          where: { bid: battleId },
-          data: {
-            winnerId: winner.id,
-            },
-          });
+      // if the battle is still waiting, just return the updated battle
+      if (battle.status === BattleStatus.WAITING) {
+        return updated;
       }
-      else if (battle.status === BattleStatus.WAITING && updated.players.length === 0) {
-        return tx.battle.update({
-          where: { bid: battleId },
-          data: {
-            status: BattleStatus.COMPLETED,
-            endedAt: new Date(),
-            },
-          });
-      }
-      else if (battle.status === BattleStatus.RUNNING) {
-        await tx.user.update({
-          where: { id: userId },
-          data: { status: UserStatus.ONLINE,
-            losses: { increment: 1 } },
-           })
-        }
 
+      // RUNNING: the leaver counts as a loss, regardless of how many players remain
+      await tx.user.update({
+        where: { id: userId },
+        data: { losses: { increment: 1 } },
+      });
+
+      // battle keeps running — remaining player(s) still need to actually solve it to win
       return updated;
     });
   }
