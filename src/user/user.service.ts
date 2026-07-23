@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { DatabaseService } from "src/database/database.service";
 import { UpdateProfileDto } from "./dto/updateProfile.dto";
 import { BattleStatus, UserStatus } from "@prisma/client";
@@ -28,7 +28,7 @@ export class UserService {
     if (!U)
       throw new NotFoundException(`User with id ${id} not found`);
     if (U.status === UserStatus.IN_BATTLE)
-      throw new Error("Cannot set status to IN_BATTLE directly. Use the battle endpoints instead.");
+      throw new UnauthorizedException("Cannot set status to IN_BATTLE directly. Use the battle endpoints instead.");
     return this.db.user.update({ where: { id }, data: { status, lastSeen: new Date() } });
   }
 

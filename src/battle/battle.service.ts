@@ -75,15 +75,55 @@ export class BattleService {
 
   async leaveBattle(userId: string, battleId: string) {
     const battle = await this.findBattleOrThrow(battleId);
-    if (battle.status !== BattleStatus.WAITING) {
-      throw new BadRequestException("Cannot leave a battle already in progress");
+    // gha zayed, mais mat3ref.
+    if (battle.status !== BattleStatus.WAITING && battle.status !== BattleStatus.RUNNING) {
+      throw new BadRequestException("Battle is not in a state that allows leaving");
     }
-    // update the player status to ONLINE when they leave a battle, using the user service
-    this.userService.updateStatus(userId, "ONLINE");
+    // check if the user is in the battle
+    if (!battle.players.some((p) => p.id === userId)) {
+      throw new BadRequestException("You are not in this battle");
+    }
+    // what is transaction?: it allows you to perform multiple database operations as a single unit of work. If any operation fails, the entire transaction is rolled back, ensuring data integrity.
+    // and if another request to leav the battle comes in the middle of this transaction, it will wait until the transaction is complete before proceeding.
+    return this.db.$transaction(async (tx) => {
+      // status to online.
+      await tx.user.update({
+        where: { id: userId },
+        data: { status: UserStatus.ONLINE },
+      });
+      // remove the player from the battle
+      const updated = await tx.battle.update({
+        where: { bid: battleId },
+        data: { players: { disconnect: { id: userId } } },
+        include: { players: true },
+      });
 
-    return this.db.battle.update({
-      where: { bid: battleId },
-      data: { players: { disconnect: { id: userId } } },
+      // no one left at all — clean up the battle regardless of status
+      if (updated.players.length === 0) {
+        await tx.battle.delete({ where: { bid: battleId } });
+        return null;
+      }
+
+      // battle was in progress and now only one player remains — they win by default
+      if (battle.status === BattleStatus.RUNNING && updated.players.length === 1) {
+        const winner = updated.players[0];
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { status: UserStatus.ONLINE },
+        });
+
+        return tx.battle.update({
+          where: { bid: battleId },
+          data: {
+            status: BattleStatus.COMPLETED,
+            endedAt: new Date(),
+            winnerId: winner.id,
+            },
+          });
+      }
+
+      return updated;
     });
   }
 
