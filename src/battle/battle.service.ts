@@ -72,7 +72,7 @@ export class BattleService {
       data: { players: { connect: { id: userId } } },
     });
   }
-
+//---------------------------------------------------------------------- 
   async leaveBattle(userId: string, battleId: string) {
     const battle = await this.findBattleOrThrow(battleId);
     // gha zayed, mais mat3ref.
@@ -110,7 +110,8 @@ export class BattleService {
 
         await tx.user.update({
           where: { id: userId },
-          data: { status: UserStatus.ONLINE },
+          data: { status: UserStatus.ONLINE,
+            wins: { increment: 1 } },
         });
 
         return tx.battle.update({
@@ -122,11 +123,18 @@ export class BattleService {
             },
           });
       }
+      else if (battle.status === BattleStatus.RUNNING) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { status: UserStatus.ONLINE,
+            losses: { increment: 1 } },
+           })
+        }
 
       return updated;
     });
   }
-
+//----------------------------------------------------------------------
   async startBattle(userId: string, battleId: string) {
     const battle = await this.findBattleOrThrow(battleId);
     if (battle.creatorId !== userId) {
