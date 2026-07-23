@@ -117,9 +117,16 @@ export class BattleService {
         return tx.battle.update({
           where: { bid: battleId },
           data: {
+            winnerId: winner.id,
+            },
+          });
+      }
+      else if (battle.status === BattleStatus.WAITING && updated.players.length === 0) {
+        return tx.battle.update({
+          where: { bid: battleId },
+          data: {
             status: BattleStatus.COMPLETED,
             endedAt: new Date(),
-            winnerId: winner.id,
             },
           });
       }
