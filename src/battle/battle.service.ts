@@ -65,9 +65,9 @@ export class BattleService {
       throw new BadRequestException("Already joined");
     }
     // update the player status to IN_BATTLE when they join a battle, using the user service
-    this.userService.updateStatus(userId, "IN_BATTLE");
+    await this.userService.updateStatus(userId, "IN_BATTLE");
 
-    return this.db.battle.update({
+    return await this.db.battle.update({
       where: { bid: battleId },
       data: { players: { connect: { id: userId } } },
     });
