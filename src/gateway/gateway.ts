@@ -127,4 +127,13 @@ export class MyGateway implements OnModuleInit {
       this.inFlight.delete(userId);
     }
   }
+
+  @SubscribeMessage('getBattlePlayers')
+  async onGetBattlePlayers(@MessageBody() data: { battleId: string }) {
+    const battle = await this.battleService.getCurrentBattle(data.battleId);
+    if (!battle) {
+      return { error: 'Battle not found' };
+    }
+    return battle.players;
+  }
 }

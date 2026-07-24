@@ -99,10 +99,12 @@ export class BattleService {
       });
       // if the battle has no more players, delete it
       if (updated.players.length === 0) {
-        await tx.user.update({
-          where: { id: userId },
-          data: { losses: { increment: 1 } },
-        });
+        if (battle.status === BattleStatus.RUNNING) {
+          await tx.user.update({
+            where: { id: userId },
+            data: { losses: { increment: 1 } },
+          });
+        }
         await tx.battle.delete({ where: { bid: battleId } });
         return null;
       }
