@@ -38,12 +38,11 @@ export class MyGateway implements OnModuleInit {
 
   @SubscribeMessage('joinBattle')
   async onJoinBattle(@Session() session: UserSession, @MessageBody() data: JoinBattleDto, @ConnectedSocket() client: Socket) {
-    console.log('joinBattle handler invoked', data);
     const battle = await this.battleService.joinBattle(session.user.id, data.battleId, data.roomCode);
     await client.join(battle.bid);
 
-    this.server.to(battle.bid).emit(`battle-${battle.bid}:allPlayers`, { battleId: battle.bid, players: battle.players });
-    return battle; // ack
+    this.server.to(battle.bid).emit('battle:playersUpdated', { battleId: battle.bid, players: battle.players });
+    return battle;
   }
 
   @SubscribeMessage('leaveBattle')
@@ -51,8 +50,8 @@ export class MyGateway implements OnModuleInit {
     const battle = await this.battleService.leaveBattle(session.user.id, data.battleId);
     await client.leave(data.battleId);
 
-    this.server.to(data.battleId).emit('battle:playerLeft', { userId: session.user.id, battle });
-    return battle; // ack
+    this.server.to(data.battleId).emit('battle:playersUpdated', { battleId: data.battleId, players: battle?.players });
+    return battle;
   }
 
   @SubscribeMessage('startBattle')
