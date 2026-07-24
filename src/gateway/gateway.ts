@@ -130,7 +130,7 @@ export class MyGateway implements OnModuleInit {
 
   @SubscribeMessage('getBattlePlayers')
   async onGetBattlePlayers(@MessageBody() data: { battleId: string }) {
-    const battle = await this.battleService.getCurrentBattle(data.battleId);
+    const battle = await this.battleService.getBattleById(data.battleId);
     if (!battle) {
       return { error: 'Battle not found' };
     }
