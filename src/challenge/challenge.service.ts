@@ -73,7 +73,7 @@ export class ChallengeService {
             throw new ForbiddenException('You do not have permission to delete this challenge');
         }
 
-        if (challenge.createdById === userId && challenge.isPublished) {
+        if (challenge.createdById === userId && challenge.isPublished && userRole !== UserRole.ADMIN) {
             throw new ForbiddenException('Published challenges can only be deleted by an admin');
         }
 
