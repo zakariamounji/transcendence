@@ -45,12 +45,11 @@
   .card p.hint{ margin:0 0 10px; font-size:12px; color:var(--muted); line-height:1.5; }
 
   label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
-  input, select, textarea{
+  input, select{
     width:100%; padding:9px 10px; background:var(--panel-2); border:1px solid var(--border);
     border-radius:6px; color:var(--text); font-size:13px;
   }
-  textarea{ min-height:140px; resize:vertical; font-family:var(--mono); line-height:1.5; }
-  input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--accent); }
+  input:focus, select:focus{ outline:none; border-color:var(--accent); }
   button.action{
     width:100%; margin-top:12px; padding:9px 10px; border:none; border-radius:6px;
     background:var(--accent); color:white; font-size:13px; font-weight:600; cursor:pointer;
@@ -62,9 +61,6 @@
 
   .row{ display:flex; gap:8px; }
   .row > *{ flex:1; }
-  .code-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-  .code-actions button{ flex:1 1 160px; }
-  .small-note{ font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5; }
 
   aside{ border-left:1px solid var(--border); background:var(--panel); padding:16px; height:100vh; position:sticky; top:0; display:flex; flex-direction:column; }
   aside h3{ font-size:13px; margin:0 0 10px; }
@@ -92,6 +88,18 @@
   .player-chip{ display:inline-block; padding:3px 9px; margin:2px; border-radius:999px; background:var(--panel-2); border:1px solid var(--border); font-size:11.5px; }
   .player-chip.you{ border-color:var(--accent); color:var(--accent); }
   .player-chip.creator::after{ content:" ★"; color:var(--warn); }
+
+  .player-row{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; background:var(--panel-2); border:1px solid var(--border); margin-bottom:6px; }
+  .player-row.you{ border-color:var(--accent); }
+  .player-avatar{ width:28px; height:28px; border-radius:50%; background:#2a3040; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--text); flex-shrink:0; }
+  .player-info{ display:flex; flex-direction:column; min-width:0; }
+  .player-name{ font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .player-id{ font-size:11px; color:var(--muted); font-family:var(--mono); }
+  .player-tags{ margin-left:auto; display:flex; gap:6px; flex-shrink:0; }
+  .player-tag{ font-size:10px; padding:2px 7px; border-radius:999px; font-weight:700; letter-spacing:.02em; }
+  .player-tag.you-tag{ background:#1e2a4a; color:var(--accent); }
+  .player-tag.creator-tag{ background:#3a2f0e; color:var(--warn); }
+  .players-empty{ font-size:13px; color:var(--muted); }
 </style>
 </head>
 <body>
@@ -161,13 +169,13 @@
     <div class="grid">
       <div class="card">
         <h3>My profile</h3>
-        <p class="hint">GET /users/me</p>
+        <p class="hint">GET /user/me</p>
         <button class="action secondary" id="btnGetMe">Get my profile</button>
       </div>
 
       <div class="card">
         <h3>Update profile</h3>
-        <p class="hint">PATCH /users/me</p>
+        <p class="hint">PATCH /user/me</p>
         <label>Full name</label><input id="updFullName" placeholder="leave blank to skip" />
         <label>Image URL</label><input id="updImage" placeholder="leave blank to skip" />
         <button class="action" id="btnUpdateMe">Save changes</button>
@@ -175,7 +183,7 @@
 
       <div class="card">
         <h3>Lookup by id</h3>
-        <p class="hint">GET /users/:id — for checking another user's public profile</p>
+        <p class="hint">GET /user/:id — for checking another user's public profile</p>
         <label>User ID</label><input id="lookupUserId" placeholder="paste a user id" />
         <button class="action secondary" id="btnLookupUser">Get user</button>
       </div>
@@ -191,8 +199,6 @@
         <label>Title</label><input id="chTitle" placeholder="Binary Search Basics" />
         <label>Slug</label><input id="chSlug" placeholder="binary-search-basics" />
         <label>Description</label><input id="chDescription" placeholder="Solve search in sorted array in O(log n)." />
-        <label>Subject</label><input id="chSubject" placeholder="Computer Science" />
-        <label>ExpectedOutput</label><input id="chExpectedOutput" placeholder="Expected output for the challenge" />
         <label>Difficulty</label>
         <select id="chDifficulty"><option>EASY</option><option selected>MEDIUM</option><option>HARD</option></select>
         <label>Languages (comma separated)</label>
@@ -254,6 +260,12 @@
         <div id="battleState" class="small" style="font-size:13px; color:var(--muted);">No battle loaded yet — create one or paste a Battle ID and click "Refresh battle info".</div>
       </div>
 
+      <div class="card" style="grid-column: 1 / -1;">
+        <h3>Players in this battle</h3>
+        <p class="hint">Live list — updates on join, leave, and refresh.</p>
+        <div id="playersList">No battle loaded yet.</div>
+      </div>
+
       <div class="card">
         <h3>Step 3 — Join / Leave <span class="badge">WebSocket</span></h3>
         <p class="hint">
@@ -263,36 +275,7 @@
         </p>
         <button class="action secondary" id="btnJoin">Join this battle</button>
         <button class="action secondary" id="btnLeave">Leave this battle</button>
-      </div>
-
-      <div class="card" style="grid-column: 1 / -1;">
-        <h3>Step 4 — Submit code <span class="badge">WebSocket</span></h3>
-        <p class="hint">
-          Tests the gateway's <code>submitCode</code> handler. Join a battle first, then send code with a language and optional stdin.
-        </p>
-        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
-          <div>
-            <label>Language</label>
-            <select id="submitLanguage">
-              <option value="C">C</option>
-              <option value="CPP" selected>CPP</option>
-            </select>
-          </div>
-          <div>
-            <label>stdin</label>
-            <input id="submitStdin" placeholder="optional input for the program" />
-          </div>
-        </div>
-        <label>Code</label>
-        <textarea id="submitCode" spellcheck="false" placeholder="#include &lt;iostream&gt;\nint main() {\n  std::cout &lt;&lt; \"Hello\";\n}"></textarea>
-        <div class="code-actions">
-          <button class="action secondary" id="btnLoadCppSample">Load C++ sample</button>
-          <button class="action secondary" id="btnLoadCSample">Load C sample</button>
-          <button class="action" id="btnSubmitCode">Submit code</button>
-        </div>
-        <p class="small-note">
-          The backend emits <code>codeSubmitted</code>, then <code>codeResult</code> or <code>battle:playerWon</code> into the battle room.
-        </p>
+        <button class="action ghost" id="btnRefreshPlayers">Refresh players (getBattlePlayers)</button>
       </div>
 
       <div class="card">
@@ -429,37 +412,35 @@ $('btnLogout').addEventListener('click', async ()=>{
 });
 
 // ===================== USER =====================
-$('btnGetMe').addEventListener('click', ()=> rest('/users/me', { method:'GET' }));
+$('btnGetMe').addEventListener('click', ()=> rest('/user/me', { method:'GET' }));
 
 $('btnUpdateMe').addEventListener('click', ()=>{
   const data = {};
   if ($('updFullName').value) data.fullName = $('updFullName').value;
   if ($('updImage').value) data.image = $('updImage').value;
   if (Object.keys(data).length === 0) return log('update profile', 'Nothing to update', true);
-  rest('/users/me', { method:'PATCH', body: JSON.stringify(data) });
+  rest('/user/me', { method:'PATCH', body: JSON.stringify(data) });
 });
 
 $('btnLookupUser').addEventListener('click', ()=>{
   const id = $('lookupUserId').value;
   if (!id) return log('lookup user', 'Provide a user id', true);
-  rest(`/users/${id}`, { method:'GET' });
+  rest(`/user/${id}`, { method:'GET' });
 });
 
 // ===================== CHALLENGE (REST) =====================
 $('btnCreateChallenge').addEventListener('click', async ()=>{
-  const language = $('chLanguages').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean)[0];
+  const languages = $('chLanguages').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
   const payload = {
     title: $('chTitle').value,
     slug: $('chSlug').value,
     description: $('chDescription').value,
     difficulty: $('chDifficulty').value,
-    language,
-    subject: $('chSubject').value,
-    expectedOutput: $('chExpectedOutput').value,
+    languages,
     expReward: Number($('chExpReward').value) || 100,
   };
-  if (!payload.title || !payload.slug || !payload.description || !payload.subject || !payload.expectedOutput || !payload.language) {
-    return log('create challenge', 'Title, slug, description, subject, expectedOutput and one language are required', true);
+  if (!payload.title || !payload.slug || !payload.description || languages.length === 0) {
+    return log('create challenge', 'Title, slug, description and at least one language are required', true);
   }
   const { ok, body } = await rest('/challenges', { method:'POST', body: JSON.stringify(payload) });
   if (ok && body?.cid){
@@ -497,9 +478,38 @@ $('btnDeleteChallenge').addEventListener('click', ()=>{
 function renderBattleState(battle){
   if (!battle){
     $('battleState').innerHTML = 'No battle loaded — create one, or paste a Battle ID and click "Refresh battle info".';
+    $('playersList').innerHTML = 'No battle loaded yet.';
+    lastBattle = null;
     return;
   }
+  lastBattle = battle;
   const players = battle.players || [];
+
+  // dedicated players list
+  if (players.length === 0){
+    $('playersList').innerHTML = '<div class="players-empty">No players loaded yet — refresh, or nobody has joined.</div>';
+  } else {
+    $('playersList').innerHTML = players.map(p => {
+      const isYou = p.id === currentUserId;
+      const isCreator = p.id === battle.creatorId;
+      const displayName = p.fullName || p.name || `User ${p.id.slice(0,8)}`;
+      const initial = displayName.trim().charAt(0).toUpperCase() || '?';
+      const tags = [
+        isCreator ? '<span class="player-tag creator-tag">CREATOR</span>' : '',
+        isYou ? '<span class="player-tag you-tag">YOU</span>' : '',
+      ].join('');
+      return `
+        <div class="player-row ${isYou ? 'you' : ''}">
+          <div class="player-avatar">${escapeHtml(initial)}</div>
+          <div class="player-info">
+            <span class="player-name">${escapeHtml(displayName)}</span>
+            <span class="player-id">${p.id}</span>
+          </div>
+          <div class="player-tags">${tags}</div>
+        </div>
+      `;
+    }).join('');
+  }
   const chips = players.length
     ? players.map(p => {
         const isYou = p.id === currentUserId;
@@ -525,7 +535,13 @@ function renderBattleState(battle){
 $('btnCreateBattle').addEventListener('click', async ()=>{
   const payload = { mode: $('mode').value, visibility: $('visibility').value, challengeId: $('challengeId').value };
   const { ok, body } = await rest('/battles', { method:'POST', body: JSON.stringify(payload) });
-  if (ok) renderBattleState(body);
+  if (ok && body?.bid){
+    $('battleId').value = body.bid;
+    // the create response has no `players` field — fetch the full battle so the state panel shows the creator right away
+    const full = await rest(`/battles/${body.bid}`, { method:'GET' });
+    if (full.ok) renderBattleState(full.body);
+    else renderBattleState(body); // fallback: at least show status/mode even without players
+  }
 });
 
 $('btnGetBattle').addEventListener('click', async ()=>{
@@ -546,10 +562,21 @@ $('btnCancelBattle').addEventListener('click', async ()=>{
 
 // ===================== WEBSOCKET =====================
 let socket = null;
+let lastBattle = null; // remember the last known battle so partial updates can be merged
 
 function setWs(connected, label){
   $('wsDot').className = 'dot ' + (connected ? 'on' : 'off');
   $('wsLabel').textContent = label;
+}
+
+function refreshPlayersViaSocket(battleId){
+  if (!socket || !socket.connected || !battleId) return;
+  socket.emit('getBattlePlayers', { battleId }, (players)=>{
+    if (Array.isArray(players)){
+      lastBattle = { ...(lastBattle || {}), players };
+      renderBattleState(lastBattle);
+    }
+  });
 }
 
 $('btnConnectWs').addEventListener('click', ()=>{
@@ -559,14 +586,20 @@ $('btnConnectWs').addEventListener('click', ()=>{
   socket.on('connect', ()=>{ setWs(true, socket.id); log('ws', 'connected'); });
   socket.on('disconnect', ()=>{ setWs(false, 'disconnected'); log('ws', 'disconnected'); });
   socket.on('connect_error', (err)=> log('ws connect_error', err.message || String(err), true));
+  socket.on('exception', (err)=> log('ws exception', err, true)); // Nest's default WsException channel
 
-  socket.on('battle:playerJoined', (data)=> { log('battle:playerJoined', data); if (data?.battle) renderBattleState(data.battle); });
-  socket.on('battle:playerLeft', (data)=> { log('battle:playerLeft', data); if (data?.battle) renderBattleState(data.battle); });
+  socket.on('battle:playerJoined', (data)=> {
+    log('battle:playerJoined', data);
+    if (data?.battle?.players) renderBattleState(data.battle);
+    else refreshPlayersViaSocket(data?.battle?.bid || $('battleId').value);
+  });
+  socket.on('battle:playerLeft', (data)=> {
+    log('battle:playerLeft', data);
+    if (data?.battle?.players) renderBattleState(data.battle);
+    else refreshPlayersViaSocket(data?.battle?.bid || $('battleId').value);
+  });
   socket.on('battle:started', (data)=> { log('battle:started', data); if (data?.battle) renderBattleState(data.battle); });
   socket.on('battle:ended', (data)=> { log('battle:ended', data); if (data?.battle) renderBattleState(data.battle); });
-  socket.on('codeSubmitted', (data)=> log('codeSubmitted', data));
-  socket.on('codeResult', (data)=> log('codeResult', data));
-  socket.on('battle:playerWon', (data)=> log('battle:playerWon', data));
 });
 
 $('btnDisconnectWs').addEventListener('click', ()=>{
@@ -584,7 +617,7 @@ function emitWithAck(event, payload){
     if (response && response.bid) renderBattleState(response);
     else if (response && response.battle) renderBattleState(response.battle);
   });
-  setTimeout(()=>{ if (!acked) log(`${event}`, 'No response after 4s — server may not be acking this event, or an exception was thrown silently. Check the backend terminal.', true); }, 8000);
+  setTimeout(()=>{ if (!acked) log(`${event}`, 'No response after 4s — server may not be acking this event, or an exception was thrown silently. Check the backend terminal.', true); }, 4000);
 }
 
 $('btnJoin').addEventListener('click', ()=>{
@@ -602,47 +635,17 @@ $('btnStart').addEventListener('click', ()=>{
   if (!battleId) return log('startBattle', 'Set a Battle ID first', true);
   emitWithAck('startBattle', { battleId });
 });
-
-function loadCPlusPlusSample(){
-  $('submitLanguage').value = 'CPP';
-  $('submitStdin').value = '5';
-  $('submitCode').value = `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-  ios::sync_with_stdio(false);
-  cin.tie(nullptr);
-
-  int n;
-  if (!(cin >> n)) return 0;
-  cout << n * 2 << '\\n';
-  return 0;
-}`;
-}
-
-function loadCSample(){
-  $('submitLanguage').value = 'C';
-  $('submitStdin').value = 'hello';
-  $('submitCode').value = `#include <stdio.h>
-
-int main(void) {
-  char buffer[128];
-  if (scanf("%127s", buffer) != 1) return 0;
-  printf("%s\n", buffer);
-  return 0;
-}`;
-}
-
-$('btnLoadCppSample').addEventListener('click', loadCPlusPlusSample);
-$('btnLoadCSample').addEventListener('click', loadCSample);
-$('btnSubmitCode').addEventListener('click', ()=>{
-  const battleId = $('battleId').value.trim();
-  const language = $('submitLanguage').value;
-  const code = $('submitCode').value.trim();
-  const stdin = $('submitStdin').value;
-  if (!battleId) return log('submitCode', 'Set a Battle ID first', true);
-  if (!code) return log('submitCode', 'Provide code to submit', true);
-  emitWithAck('submitCode', { battleId, language, code, stdin: stdin || undefined });
+$('btnRefreshPlayers').addEventListener('click', ()=>{
+  const battleId = $('battleId').value;
+  if (!battleId) return log('getBattlePlayers', 'Set a Battle ID first', true);
+  if (!socket || !socket.connected) return log('getBattlePlayers', 'Connect the WebSocket first (Settings tab)', true);
+  socket.emit('getBattlePlayers', { battleId }, (players)=>{
+    log('getBattlePlayers ack', players);
+    if (Array.isArray(players)){
+      lastBattle = { ...(lastBattle || {}), bid: battleId, players };
+      renderBattleState(lastBattle);
+    }
+  });
 });
 
 // on load, silently check session

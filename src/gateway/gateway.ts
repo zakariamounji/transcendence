@@ -42,7 +42,7 @@ export class MyGateway implements OnModuleInit {
     const battle = await this.battleService.joinBattle(session.user.id, data.battleId, data.roomCode);
     await client.join(battle.bid);
 
-    this.server.to(battle.bid).emit('battle:playerJoined', { userId: session.user.id, battle });
+    this.server.to(battle.bid).emit(`battle-${battle.bid}:allPlayers`, { battleId: battle.bid, players: battle.players });
     return battle; // ack
   }
 

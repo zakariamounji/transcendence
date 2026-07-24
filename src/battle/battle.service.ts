@@ -70,6 +70,7 @@ export class BattleService {
     return await this.db.battle.update({
       where: { bid: battleId },
       data: { players: { connect: { id: userId } } },
+      include: { players: true, challenge: true },
     });
   }
 //---------------------------------------------------------------------- 
