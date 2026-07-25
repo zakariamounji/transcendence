@@ -35,6 +35,14 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   trustedOrigins,
 
+  advanced: {
+    ipAddress: {
+      // nginx is the only hop in front of the app, so its forwarded header is
+      // the real client. Without this every user shares one rate-limit bucket.
+      ipAddressHeaders: ['x-forwarded-for'],
+    },
+  },
+
   // hadi zdtha bach better auth i includi l role dyal user f session object
   user: {
     additionalFields: {
