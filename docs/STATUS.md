@@ -139,7 +139,27 @@ Fixed while assembling this tree:
   password prompt), `alert()`-driven UX, duplicate DOM ids, and the misspelled
   `myfectch.ts` / `chanllenges` / `Battels` identifiers.
 
-## 5. What is still missing
+## 5. What was verified
+
+The assembled stack was brought up with `make` and exercised, not just compiled:
+
+- All nine services reach a healthy state; migrations apply on first boot.
+- Sign-up over HTTPS returns 200 and sets a `__Secure-` session cookie, which
+  then authenticates `GET /user/me`.
+- `GET /user/all` returns no email addresses.
+- An unauthenticated request to a guarded route returns 401.
+- nginx serves the frontend, the REST API and `/api/auth/*` from one HTTPS
+  origin, and the socket.io handshake advertises a websocket upgrade, so live
+  traffic runs over `wss`.
+- `/metrics` is not reachable from outside; Prometheus scrapes it over the
+  internal network and reports all four targets up.
+- Grafana provisions its Prometheus datasource and the overview dashboard
+  automatically; Alertmanager substitutes its SMTP credentials from the
+  environment, leaving no secret in the image.
+
+Both halves build and lint clean (`npm run build` and `eslint` with zero errors).
+
+## 6. What is still missing
 
 **Mandatory for the subject (see section 1)**
 
@@ -174,7 +194,7 @@ Fixed while assembling this tree:
 - The leaderboard is paginated and searched entirely client-side over the full
   user list.
 
-## 6. Suggested order of work
+## 7. Suggested order of work
 
 1. **Rotate every leaked credential** (Gmail app password, Postgres, Grafana).
    They are still in git history.
