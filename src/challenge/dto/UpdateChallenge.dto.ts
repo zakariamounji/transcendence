@@ -22,7 +22,7 @@ export class UpdateChallengeDto {
     difficulty?: Difficulty;
 
     @IsOptional()
-    @ArrayNotEmpty()
+    // @ArrayNotEmpty()
     @IsEnum(Language, {each: true})
     language?: Language;
 
