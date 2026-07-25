@@ -33,9 +33,10 @@ export class CreateChallengeDto {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(120)
   timeLimitMin?: number;
   @IsInt()
   @Min(1)
-  @Max(6)
+  @Max(100)
   expReward?: number;
 }
