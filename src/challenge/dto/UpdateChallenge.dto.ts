@@ -22,7 +22,6 @@ export class UpdateChallengeDto {
     difficulty?: Difficulty;
 
     @IsOptional()
-    @IsArray()
     @ArrayNotEmpty()
     @IsEnum(Language, {each: true})
     language?: Language;
@@ -39,6 +38,7 @@ export class UpdateChallengeDto {
     @Max(120)
     timeLimitMin?: number;
 
+    @IsOptional()
     @IsBoolean()
     isPublished?: boolean;
 }
