@@ -30,12 +30,13 @@ export class UpdateChallengeDto {
     @IsOptional()
     @IsInt()
     @Min(1)
-    @Max(6)
+    @Max(100)
     expReward?: number;
 
     @IsOptional()
     @IsInt()
     @Min(1)
+    @Max(120)
     timeLimitMin?: number;
 
     @IsBoolean()
