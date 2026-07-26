@@ -32,6 +32,22 @@ export class MyGateway implements OnModuleInit {
   // one timer per running battle, so a battle that runs out of time closes itself
   private closers = new Map<string, NodeJS.Timeout>();
 
+  /**
+   * What each player of a battle is doing, by user id: 'running' while the judge has
+   * their code, then the verdict it came back with, then 'won'.
+   *
+   * codeSubmitted and codeResult only reach whoever happened to be in the room at
+   * that second, so a page that opens late, or a socket that reconnected, knew
+   * nothing about anybody else. Keeping it here is what lets them catch up.
+   */
+  private activity = new Map<string, Record<string, string>>();
+
+  private setActivity(battleId: string, userId: string, doing: string) {
+    const next = { ...(this.activity.get(battleId) ?? {}), [userId]: doing };
+    this.activity.set(battleId, next);
+    this.server.to(battleId).emit('battle:activity', { battleId, activity: next });
+  }
+
   // tells every client, in a room or not, that the battle list moved
   private lobbyChanged() {
     this.server.emit('lobby:changed');
@@ -55,6 +71,7 @@ export class MyGateway implements OnModuleInit {
     this.closers.delete(battleId);
     try {
       const battle = await this.battleService.endBattle(battleId, null);
+      this.activity.delete(battleId);
       this.server.to(battleId).emit('battle:ended', { battle });
       this.lobbyChanged();
     } catch {
@@ -87,6 +104,9 @@ export class MyGateway implements OnModuleInit {
     }
 
     await client.join(battle.bid);
+
+    // this is the catching up: what everyone was doing before this page existed
+    client.emit('battle:activity', { battleId: battle.bid, activity: this.activity.get(battle.bid) ?? {} });
 
     // the process may have been restarted while this one was running, and the timer
     // that was meant to close it died with it
@@ -142,6 +162,7 @@ export class MyGateway implements OnModuleInit {
 
     this.disarm(data.battleId);
     const battle = await this.battleService.endBattle(data.battleId, null);
+    this.activity.delete(data.battleId);
 
     this.server.to(data.battleId).emit('battle:ended', { battle });
     this.lobbyChanged();
@@ -182,11 +203,13 @@ export class MyGateway implements OnModuleInit {
 
       // the room hears that somebody submitted, never what they wrote
       this.server.to(data.battleId).emit('codeSubmitted', { userId: session.user.id });
+      this.setActivity(data.battleId, userId, 'running');
 
       // the input is the one the challenge was written with, not one the client picked
       const result = await this.rustboxService.runSubmission(data.language, data.code, battle.challenge.subject);
       if (!result || typeof result.verdict === 'undefined') {
         this.server.to(data.battleId).emit('codeResult', { userId: session.user.id, result: { verdict: 'RE', stdout: '', stderr: 'Judge returned an invalid response' } });
+        this.setActivity(data.battleId, userId, 'RE');
         return { verdict: 'RE', stdout: '', stderr: 'Judge returned an invalid response' }; // ack
       }
       if (result.verdict === 'AC') {
@@ -195,16 +218,21 @@ export class MyGateway implements OnModuleInit {
           // it is over, the clock does not get to end it a second time
           this.disarm(data.battleId);
           const finishedBattle = await this.battleService.endBattle(data.battleId, session.user.id);
+          this.setActivity(data.battleId, userId, 'won');
+          this.activity.delete(data.battleId);
           this.server.to(data.battleId).emit('battle:playerWon', { userId: session.user.id });
           this.server.to(data.battleId).emit('battle:ended', { battle: finishedBattle });
           this.lobbyChanged();
         } else {
           this.server.to(data.battleId).emit('codeResult', { userId: session.user.id, result: { ...result, verdict: 'WA' } });
+          this.setActivity(data.battleId, userId, 'WA');
         }
       }
       else {
 
           this.server.to(data.battleId).emit('codeResult', { userId: session.user.id, result });
+          // the judge leaves it null when it has nothing to say, which reads as a crash
+          this.setActivity(data.battleId, userId, result.verdict ?? 'RE');
       }
       return {
         stderr: result.stderr,
