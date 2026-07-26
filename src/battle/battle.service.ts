@@ -176,9 +176,21 @@ export class BattleService {
     if (battle.status !== BattleStatus.WAITING) {
       throw new BadRequestException("Cannot cancel a battle already in progress");
     }
-    return this.db.battle.update({
-      where: { bid: battleId },
-      data: { status: BattleStatus.CANCELLED },
+    // a cancelled battle used to leave everyone in it stuck on IN_BATTLE, and a player
+    // stuck on IN_BATTLE can never create or join another battle
+    return this.db.$transaction(async (tx) => {
+      await tx.user.updateMany({
+        where: { id: { in: battle.players.map((p) => p.id) } },
+        data: { status: UserStatus.ONLINE },
+      });
+
+      return tx.battle.update({
+        where: { bid: battleId },
+        data: {
+          status: BattleStatus.CANCELLED,
+          players: { disconnect: battle.players.map((p) => ({ id: p.id })) },
+        },
+      });
     });
   }
 
