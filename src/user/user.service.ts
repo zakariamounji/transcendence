@@ -58,17 +58,22 @@ export class UserService {
 
   // called after a battle resolves — not exposed as its own public endpoint
   async applyBattleResult(id: string, won: boolean, expGained: number) {
-    const user = await this.db.user.update({
+    const userBefore = await this.findUserById(id);
+
+    const totalExp = userBefore.exp + expGained;
+    const levelsGained = Math.floor(totalExp / 100);
+    const newExp = totalExp % 100;
+    const newLevel = userBefore.level + levelsGained;
+
+    return this.db.user.update({
       where: { id },
       data: {
         wins: won ? { increment: 1 } : undefined,
         losses: !won ? { increment: 1 } : undefined,
-        exp: { increment: expGained },
-        totalChallengesPlayed: {increment: 1},
-        level: { increment: Math.floor(expGained / 100) }, // Example leveling system: 100 exp per level
+        exp: newExp,
+        totalChallengesPlayed: { increment: 1 },
+        level: newLevel,
       },
     });
-
-    return user;
   }
 }
