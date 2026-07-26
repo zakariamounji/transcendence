@@ -1,4 +1,4 @@
-import { Injectable , ConflictException} from '@nestjs/common';
+import { Injectable , ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateChallengeDto } from './dto/CreateChallenge.dto';
 import { UpdateChallengeDto } from './dto/UpdateChallenge.dto';
@@ -62,19 +62,26 @@ export class ChallengeService {
     async deleteChallenge(challengeId: string, userId: string, userRole: UserRole) {
         const challenge = await this.databaseService.challenge.findUnique({
             where: { cid: challengeId },
+            include: { _count: { select: { battles: true } } },
         });
 
         if (!challenge) {
-            throw new Error('Challenge not found');
+            throw new NotFoundException('Challenge not found');
         }
 
         if (challenge.createdById !== userId && userRole !== UserRole.ADMIN) {
-            throw new Error('You do not have permission to delete this challenge');
+            throw new ForbiddenException('You do not have permission to delete this challenge');
         }
 
-        return this.databaseService.challenge.delete({
-            where: { cid: challengeId },
-        });
+        if (challenge.createdById === userId && challenge.isPublished && userRole !== UserRole.ADMIN) {
+            throw new ForbiddenException('Published challenges can only be deleted by an admin');
+        }
+
+        if (challenge._count.battles > 0) {
+            throw new ConflictException('This challenge has been used in battles and cannot be deleted');
+        }
+
+        return this.databaseService.challenge.delete({ where: { cid: challengeId } });
     }
 
     async getChallengeById(challengeId: string) {

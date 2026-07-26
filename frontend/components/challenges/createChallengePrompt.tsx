@@ -22,8 +22,13 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Add01Icon } from "@hugeicons/core-free-icons"
 import { useState } from "react"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
+import { useRouter } from "next/navigation"
 
 export default function CreateChallengePrompt(): React.JSX.Element {
+
+  const router = useRouter()
+
+  const [loading, setLoading] = useState(false)
 
   const [title, setTitle] = useState<string>("To uppercase a string in C")
   const [description, setDescription] = useState<string>("Create a program that takes a string as input and converts it to uppercase using C programming language.")
@@ -41,16 +46,17 @@ export default function CreateChallengePrompt(): React.JSX.Element {
   const handleCreateChallenge = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 
     e.preventDefault()
+    setLoading(true)
 
     if (title.length < 6 || description.length < 10 || input.length < 1 || output.length < 1
       || !languagesList.includes(language) || !["EASY", "MEDIUM", "HARD"].includes(difficulty)
     ) {
       alert("Please fill in all fields correctly.")
+      setLoading(false)
       return
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
-    const res = await fetch(`${backendUrl}/challenges`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/challenges`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -77,10 +83,13 @@ export default function CreateChallengePrompt(): React.JSX.Element {
       setOutput("")
       setDifficulty("EASY")
       setLanguage("C")
+
+      router.refresh()
     } else {
-      alert("Failed to create challenge.")
+      alert((await res.json()).message || "Failed to create challenge.")
     }
 
+    setLoading(false)
   }
 
   const [open, setOpen] = useState(false)
@@ -260,8 +269,8 @@ export default function CreateChallengePrompt(): React.JSX.Element {
                 </Button>
               }
             />
-            <Button className="h-11" onClick={handleCreateChallenge}>
-              Create Challenge
+            <Button className="h-11" onClick={handleCreateChallenge} disabled={loading}>
+              {loading ? "Creating..." : "Create Challenge"}
             </Button>
           </DialogFooter>
 

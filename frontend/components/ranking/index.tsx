@@ -1,8 +1,21 @@
+"use client"
 import type { User } from "@/interfaces"
 import { AnalyticsUpIcon, Award02Icon, StarIcon, TradeDownIcon } from "@hugeicons/core-free-icons"
 import { Progress } from "@/components/ui/progress"
 import { HugeiconsIcon } from "@hugeicons/react"
 import Image from "next/image"
+import { Input } from "@/components/ui/input"
+import { useState, useMemo, useEffect } from "react"
+import { FilterDrawer } from "./filter"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 export default function Ranking({
   ranking,
@@ -11,18 +24,73 @@ export default function Ranking({
   ranking: User[]
   myId: string
 }): React.JSX.Element {
+
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [status, setStatus] = useState<"OFFLINE" | "ONLINE" | "IN_BATTLE" | null>(null)
+  const [winRateFilter, setWinRateFilter] = useState<"HIGH" | "LOW" | null>(null)
+
+  const rankedUsers = useMemo(() => {
+    return ranking.map((user, index) => ({
+      ...user,
+      rank: index + 1
+    }))
+  }, [ranking])
+
+  const [currentPage, setCurrentPage] = useState<number>(1)
+
+  const filteredRanking = useMemo(() => {
+  const filtered = rankedUsers.filter((user) => {
+      const matchesSearch =
+        user.name.toLowerCase().includes(searchQuery.toLowerCase())
+
+      const matchesStatus =
+        status === null || user.status === status
+
+      return matchesSearch && matchesStatus
+    })
+
+    if (winRateFilter === "HIGH") {
+      filtered.sort((a, b) => b.wins - a.wins)
+    } else if (winRateFilter === "LOW") {
+      filtered.sort((a, b) => b.losses - a.losses)
+    }
+
+    return filtered
+  }, [rankedUsers, searchQuery, status, winRateFilter])
+
+  const totalPages = Math.ceil(filteredRanking.length / 10) || 1
+
+  const paginatedRanking = useMemo(() => {
+    const start = (currentPage - 1) * 10
+    return filteredRanking.slice(start, start + 10)
+  }, [filteredRanking, currentPage])
+
   return (
     <div className="mt-4">
 
       <p className="text-lg font-bold mt-6"> Global Ranking </p>
 
-      {ranking.length > 0 ? (
+      <div className="mt-2 mb-4 flex items-center justify-between gap-2">
+        <Input
+          placeholder="Search user..."
+          className="h-11 rounded-sm border border-gray-400 focus:border-gray-400 focus:ring-0 hover:border-gray-300"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <FilterDrawer
+          setStatus={setStatus}
+          status={status}
+          winRateFilter={winRateFilter}
+          setWinRateFilter={setWinRateFilter}
+        />
+      </div>
+
+      {paginatedRanking.length > 0 ? (
         <div className="mt-2 grid grid-cols-1 gap-2">
-          {ranking.map((user, index) => (
+          {paginatedRanking.map((user) => (
             <div
-              key={index}
-              className="flex flex-col bg-secondary/10 p-4 rounded-md max-[600px]:p-2
-              hover:bg-secondary/20 transition-colors hover:scale-101 ease-in-out duration-500"
+              key={user.rank}
+              className="flex flex-col bg-secondary/10 p-4 rounded-md hover:bg-secondary/20 transition-colors hover:scale-101 ease-in-out duration-500"
             >
               
               <div className="flex items-center justify-between max-[909px]:gap-4 max-[909px]:items-start max-[909px]:flex-col">
@@ -34,7 +102,7 @@ export default function Ranking({
                       fill
                       sizes="(max-width: 768px) 100vw, 33vw"
                       draggable={false}
-                      className="object-cover"
+                      className="object-cover select-none"
                       loading="eager"
                     />
                   </div>
@@ -48,7 +116,7 @@ export default function Ranking({
                       style={{ backgroundColor: user.status === "IN_BATTLE" ? "#D1FAE5" : myId === user.id ? "#FEF3C7" :
                         user.status === "ONLINE" ? "#FEF3C7" : "#E5E7EB" }}
                     >
-                      {myId === user.id ? "ONLINE" : user.status}
+                      {user.status === "IN_BATTLE" ? "IN BATTLE" : myId === user.id ? "ONLINE" : user.status}
                     </div>
                   </div>
                 </div>
@@ -122,7 +190,7 @@ export default function Ranking({
   
                     <div>
                       <div className="font-semibold text-yellow-700">
-                        #{index + 1}
+                        #{user.rank}
                       </div>
                       <div className="text-[10px] text-gray-500">
                         Rank
@@ -148,8 +216,39 @@ export default function Ranking({
           ))}
         </div>
       ) : (
-        <span className="text-gray-300 text-[12px]"> No users yet </span>
+        <span className="text-gray-300 text-[12px]"> No users found </span>
       )}
+
+      <Pagination className="mt-4 justify-center">
+        <PaginationContent>
+
+          <PaginationItem className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}>
+            <PaginationPrevious
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="hover:text-black"
+            />
+          </PaginationItem>
+
+          {Array.from({ length: totalPages }, (_, index) => (
+            <PaginationItem key={index} className={`${currentPage === index + 1 ? "pointer-events-none opacity-50" : ""}`}>
+              <PaginationLink
+                onClick={() => setCurrentPage(index + 1)}
+                className={`${currentPage === index + 1 ? "bg-gray-700 text-white" : ""} hover:text-black`}
+              >
+                {index + 1}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+
+          <PaginationItem className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}>
+            <PaginationNext
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              className="hover:text-black"
+            />
+          </PaginationItem>
+
+        </PaginationContent>
+      </Pagination>
 
     </div>
   )

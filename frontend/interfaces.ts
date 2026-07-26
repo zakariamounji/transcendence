@@ -25,11 +25,26 @@ interface User {
   totalChallengesPlayed: number
   totalChallengesCreated: number
   lastSeen: Date
+  battle: Battle | null
   name: string
   image: string | null
 }
 
+interface Battle {
+  bid: string
+  mode: "SOLO" | "DUO" | "GROUP"
+  visibility: "PUBLIC" | "PRIVATE"
+  status: "WAITING" | "RUNNING" | "COMPLETED" | "CANCELLED"
+  maxPlayers: number
+  roomCode: string | null
+  challenge: Challenge
+  winnerId: string | null
+  players: User[]
+  creator: User
+}
+
 export type {
   Challenge,
-  User
+  User,
+  Battle
 }

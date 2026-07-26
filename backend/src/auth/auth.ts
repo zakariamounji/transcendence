@@ -4,6 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { genericOAuth } from "better-auth/plugins"; // for 42 provider
+import { stat } from "fs";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -14,6 +15,24 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   //ila zdti chi localhost b port wahad khor zido hna bach req twasal
   trustedOrigins: ["http://localhost:3000", "http://localhost:5500", "http://localhost:8080", "http://localhost:1337", "http://10.14.4.9:1337"],
+
+  // hadi zdtha bach better auth i includi l role dyal user f session object
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        defaultValue: "USER",
+        input: false, // prevents clients from setting their own role
+      },
+      status: {
+        type: "string",
+        defaultValue: "OFFLINE",
+        input: false, // prevents clients from setting their own status
+      },
+    },
+  },
+
+
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,

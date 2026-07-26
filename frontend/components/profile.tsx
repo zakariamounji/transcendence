@@ -103,7 +103,7 @@ export default function Profile({
 
       <div className="h-48 max-[550px]:h-max w-4/6 bg-white rounded-sm p-4 border border-gray-600 max-[904px]:w-full">
 
-        <span className="text-[13px] text-gray-900">
+        <span className="text-[13px] text-gray-900 font-medium">
           Performance
         </span>
 

@@ -1,3 +1,4 @@
+"use client"
 import type { Challenge } from "@/interfaces"
 import { Button } from "@/components/ui/button"
 import { Play } from "lucide-react";
@@ -5,6 +6,9 @@ import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { BubbleChatUnlockIcon, Delete02Icon } from "@hugeicons/core-free-icons";
 import ChallengeInfoPrompt from "@/components/challenges/challangeInfoPrompt"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import CreateBattlePrompt from "@/components/challenges/createBattle"
 
 export default function ChallengeGrid({
   chanllenges,
@@ -45,15 +49,14 @@ function DifficultyBadge({ difficulty }: { difficulty: string }) {
 
 function ChallengeCard({ challenge, isAdmin, createdById }: { challenge: Challenge; isAdmin: boolean; createdById: string }): React.JSX.Element {
 
-  const createBattle = async () => {
+  const router = useRouter()
 
-    /* create better here */
-
-  }
+  const [isDeleting, setIsDeleting] = useState<boolean>(false)
+  const [isPublishing, setIsPublishing] = useState<boolean>(false)
 
   const publishChallenge = async () => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
-    const res = await fetch(`${backendUrl}/challenges/${challenge.cid}`, {
+    setIsPublishing(true)
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/challenges/${challenge.cid}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -67,13 +70,15 @@ function ChallengeCard({ challenge, isAdmin, createdById }: { challenge: Challen
     if (res.ok) {
       alert("Challenge published successfully")
     } else {
-      alert("Failed to publish challenge")
+      alert((await res.json()).message || "Failed to publish challenge")
     }
+    setIsPublishing(false)
+    router.refresh()
   }
 
   const deleteChallenge = async () => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000"
-    const res = await fetch(`${backendUrl}/challenges/${challenge.cid}`, {
+    setIsDeleting(true)
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/challenges/${challenge.cid}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json"
@@ -84,8 +89,10 @@ function ChallengeCard({ challenge, isAdmin, createdById }: { challenge: Challen
     if (res.ok) {
       alert("Challenge deleted successfully")
     } else {
-      alert("Failed to delete challenge")
+      alert((await res.json()).message || "Failed to delete challenge")
     }
+    setIsDeleting(false)
+    router.refresh()
   }
 
   return (
@@ -116,20 +123,15 @@ function ChallengeCard({ challenge, isAdmin, createdById }: { challenge: Challen
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 w-full">
 
-        <Button
-          className="flex-1 h-12 w-full"
-          onClick={createBattle}
-        >
-          <Play className="w-4 h-4 mr-2" />
-          Create Battle
-        </Button>
+        <CreateBattlePrompt challengeId={challenge.cid} />
 
         {isAdmin && !challenge.isPublished && (
           <Button
             className="h-12 w-12 shrink-0 bg-blue-100 hover:bg-blue-200"
             onClick={publishChallenge}
+            disabled={isPublishing}
           >
             <HugeiconsIcon
               icon={BubbleChatUnlockIcon}
@@ -144,6 +146,7 @@ function ChallengeCard({ challenge, isAdmin, createdById }: { challenge: Challen
           <Button
             className="h-12 w-12 shrink-0 bg-red-100 hover:bg-red-200"
             onClick={deleteChallenge}
+            disabled={isDeleting}
           >
             <HugeiconsIcon
               icon={Delete02Icon}

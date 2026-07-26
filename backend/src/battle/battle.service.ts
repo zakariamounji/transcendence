@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from "@nestjs/common";
-import { BattleMode, BattleStatus, BattleVisibility } from "@prisma/client";
+import { BattleMode, BattleStatus, BattleVisibility, UserStatus } from "@prisma/client";
 import { DatabaseService } from "src/database/database.service";
 import { CreateBattleDto } from "./dto/create-battle.dto";
 import { UserService } from "src/user/user.service";
@@ -16,25 +16,41 @@ export class BattleService {
   constructor(private readonly db: DatabaseService, private readonly userService: UserService) {}
 
   async createBattle(creatorId: string, dto: CreateBattleDto) {
-    const maxPlayers = MAX_PLAYERS_BY_MODE[dto.mode];
-    const roomCode = dto.visibility === BattleVisibility.PRIVATE ? this.generateRoomCode() : null;
+  const maxPlayers = MAX_PLAYERS_BY_MODE[dto.mode];
+  const roomCode = dto.visibility === BattleVisibility.PRIVATE ? this.generateRoomCode() : null;
 
-    return this.db.battle.create({
-      data: {
-        mode: dto.mode,
-        visibility: dto.visibility ?? BattleVisibility.PUBLIC,
-        maxPlayers,
-        roomCode,
-        durationSeconds: dto.durationSeconds ?? 1160,
-        creatorId,
-        challengeId: dto.challengeId,
-        players: { connect: { id: creatorId } }, // creator auto-joins, connect: it is the one that actually creates the relation between the battle and the user
-      },
+  return await this.db.$transaction(async (tx) => {
+      const locked = await tx.user.updateMany({
+        where: { id: creatorId, status: { not: UserStatus.IN_BATTLE } },
+        data: { status: UserStatus.IN_BATTLE },
+      });
+
+      if (locked.count === 0) {
+        throw new BadRequestException('You are already in another battle');
+      }
+
+      return tx.battle.create({
+        data: {
+          mode: dto.mode,
+          visibility: dto.visibility ?? BattleVisibility.PUBLIC,
+          maxPlayers,
+          roomCode,
+          durationSeconds: dto.durationSeconds ?? 900,
+          creatorId,
+          challengeId: dto.challengeId,
+          players: { connect: { id: creatorId } },
+        },
+      });
     });
   }
 
   async joinBattle(userId: string, battleId: string, roomCode?: string) {
-    const battle = await this.findBattleOrThrow(battleId, { players: true });
+    const battle = await this.findBattleOrThrow(battleId);
+    const user = await this.userService.findUserById(userId);
+
+    if (user.status === UserStatus.IN_BATTLE) {
+      throw new BadRequestException("You are already in another battle");
+    }
 
     if (battle.status !== BattleStatus.WAITING) {
       throw new BadRequestException("Battle is not accepting players");
@@ -49,30 +65,68 @@ export class BattleService {
       throw new BadRequestException("Already joined");
     }
     // update the player status to IN_BATTLE when they join a battle, using the user service
-    this.userService.updateStatus(userId, "IN_BATTLE");
+    await this.userService.updateStatus(userId, "IN_BATTLE");
 
-    return this.db.battle.update({
+    return await this.db.battle.update({
       where: { bid: battleId },
       data: { players: { connect: { id: userId } } },
+      include: { players: true, challenge: true },
     });
   }
-
+//---------------------------------------------------------------------- 
   async leaveBattle(userId: string, battleId: string) {
     const battle = await this.findBattleOrThrow(battleId);
-    if (battle.status !== BattleStatus.WAITING) {
-      throw new BadRequestException("Cannot leave a battle already in progress");
+    // gha zayed, mais mat3ref.
+    if (battle.status !== BattleStatus.WAITING && battle.status !== BattleStatus.RUNNING) {
+      throw new BadRequestException("Battle is not in a state that allows leaving");
     }
-    // update the player status to ONLINE when they leave a battle, using the user service
-    this.userService.updateStatus(userId, "ONLINE");
+    // check if the user is in the battle
+    if (!battle.players.some((p) => p.id === userId)) {
+      throw new BadRequestException("You are not in this battle");
+    }
+    // what is transaction?: it allows you to perform multiple database operations as a single unit of work. If any operation fails, the entire transaction is rolled back, ensuring data integrity.
+    // and if another request to leav the battle comes in the middle of this transaction, it will wait until the transaction is complete before proceeding.
+    return this.db.$transaction(async (tx) => {
+      // status form IN_BATTLE to ONLINE.
+      await tx.user.update({
+        where: { id: userId },
+        data: { status: UserStatus.ONLINE },
+      });
+      // remove the player from the battle
+      const updated = await tx.battle.update({
+        where: { bid: battleId },
+        data: { players: { disconnect: { id: userId } } },
+        include: { players: true },
+      });
+      // if the battle has no more players, delete it
+      if (updated.players.length === 0) {
+        if (battle.status === BattleStatus.RUNNING) {
+          await tx.user.update({
+            where: { id: userId },
+            data: { losses: { increment: 1 } },
+          });
+        }
+        await tx.battle.delete({ where: { bid: battleId } });
+        return null;
+      }
+      // if the battle is still waiting, just return the updated battle
+      if (battle.status === BattleStatus.WAITING) {
+        return updated;
+      }
 
-    return this.db.battle.update({
-      where: { bid: battleId },
-      data: { players: { disconnect: { id: userId } } },
+      // RUNNING: the leaver counts as a loss, regardless of how many players remain
+      await tx.user.update({
+        where: { id: userId },
+        data: { losses: { increment: 1 } },
+      });
+
+      // battle keeps running — remaining player(s) still need to actually solve it to win
+      return updated;
     });
   }
-
+//----------------------------------------------------------------------
   async startBattle(userId: string, battleId: string) {
-    const battle = await this.findBattleOrThrow(battleId, { players: true });
+    const battle = await this.findBattleOrThrow(battleId);
     if (battle.creatorId !== userId) {
       throw new ForbiddenException("Only the creator can start the battle");
     }
@@ -122,25 +176,36 @@ export class BattleService {
     if (battle.status !== BattleStatus.WAITING) {
       throw new BadRequestException("Cannot cancel a battle already in progress");
     }
-    return this.db.battle.update({
-      where: { bid: battleId },
-      data: { status: BattleStatus.CANCELLED },
+    // a cancelled battle used to leave everyone in it stuck on IN_BATTLE, and a player
+    // stuck on IN_BATTLE can never create or join another battle
+    return this.db.$transaction(async (tx) => {
+      await tx.user.updateMany({
+        where: { id: { in: battle.players.map((p) => p.id) } },
+        data: { status: UserStatus.ONLINE },
+      });
+
+      return tx.battle.update({
+        where: { bid: battleId },
+        data: {
+          status: BattleStatus.CANCELLED,
+          players: { disconnect: battle.players.map((p) => ({ id: p.id })) },
+        },
+      });
     });
   }
 
   getBattleById(battleId: string) {
-    return this.findBattleOrThrow(battleId, { players: true, creator: true, challenge: true });
+    return this.findBattleOrThrow(battleId);
   }
 
-  getAllBattles(status?: BattleStatus) {
+  getAllBattles() {
     return this.db.battle.findMany({
-      where: { visibility: BattleVisibility.PUBLIC, ...(status && { status }) },
-      include: { creator: true, players: true },
+      include: { creator: true, players: true, challenge: true },
       orderBy: { createdAt: "desc" },
     });
   }
 
-  private async findBattleOrThrow(battleId: string, include?: object) {
+  async findBattleOrThrow(battleId: string) {
     const battle = await this.db.battle.findUnique({ where: { bid: battleId }, include: {players: true, challenge: true} });
     if (!battle) throw new NotFoundException(`Battle ${battleId} not found`);
     return battle;
@@ -149,4 +214,22 @@ export class BattleService {
   private generateRoomCode(): string {
     return Math.random().toString(36).slice(2, 8).toUpperCase();
   }
+
+  async compareOutput(actualOutput: string, expectedOutput: string): Promise<boolean> {
+
+    const normalize = (output: string) => output.trim().replace(/\r\n/g, '\n').replace(/\s+/g, ' ');
+    return normalize(actualOutput) === normalize(expectedOutput);
+  }
+
+
+  async getCurrentBattle(userId: string) {
+    return this.db.battle.findFirst({
+      where: {
+        players: { some: { id: userId } },
+        status: { in: [BattleStatus.WAITING, BattleStatus.RUNNING]},
+      },
+      include: { players: true, challenge: true },
+    });
+  }
+
 }

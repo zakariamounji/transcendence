@@ -1,16 +1,18 @@
 "use server"
 import { cookies } from "next/headers"
 
-function resolveBackendUrl(url: string): string {
+function getBackendUrl(url: string) {
+  const backendBaseUrl =
+    process.env.INTERNAL_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    "http://localhost:3000"
+
   if (/^https?:\/\//i.test(url)) {
-    return url
+    const parsedUrl = new URL(url)
+    return new URL(parsedUrl.pathname + parsedUrl.search + parsedUrl.hash, backendBaseUrl)
   }
 
-  const baseUrl =
-    process.env.INTERNAL_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_URL
-
-  return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`
+  return new URL(url, backendBaseUrl)
 }
 
 export async function myfetch(url: string, options?: RequestInit): Promise<Response> {
@@ -21,7 +23,7 @@ export async function myfetch(url: string, options?: RequestInit): Promise<Respo
     .map((c) => `${c.name}=${c.value}`)
     .join("; ")
 
-  const resolvedUrl = resolveBackendUrl(url)
+  const resolvedUrl = getBackendUrl(url)
 
   const res = await fetch(resolvedUrl, {
     ...options,
