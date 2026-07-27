@@ -27,12 +27,10 @@ create-network:
 		echo "✅ External network '$(NETWORK_NAME)' already exists."; \
 	fi
 
-# 3. Build and launch main app services
 up: check-env create-network
 	@echo "🛠️  Building and starting main app services..."
 	docker compose up --build -d
 
-# 4. Launch monitoring services
 monitoring: check-env create-network
 	@echo "📊 Starting monitoring stack..."
 	docker compose -f $(MONITORING_COMPOSE) up --build -d
