@@ -3,7 +3,7 @@ import { Rustbox, RustboxTimeoutError, RustboxRateLimitError } from "rustbox";
 
 @Injectable()
 export class RustboxService {
-  private client = new Rustbox(process.env["X-API-KEY"] || "");
+  private client = new Rustbox(process.env["X_API_KEY"] || "");
 
 async runSubmission(language: string, code: string, stdin?: string) {
     try {
