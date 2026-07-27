@@ -19,10 +19,10 @@ export class AppModule {
     consumer
       .apply(RateLimitMiddleware)
       .forRoutes(
-        {
-          path: 'api/auth/*',
-          method: RequestMethod.ALL,
-        },
+        // {
+        //   path: 'api/auth/*',
+        //   method: RequestMethod.ALL,
+        // },
         {
           path: 'battles/create',
           method: RequestMethod.POST,
