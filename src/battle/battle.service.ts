@@ -217,8 +217,7 @@ export class BattleService {
 
   async compareOutput(actualOutput: string, expectedOutput: string): Promise<boolean> {
 
-    const normalize = (output: string) => output.trim().replace(/\r\n/g, '\n').replace(/\s+/g, ' ');
-    return normalize(actualOutput) === normalize(expectedOutput);
+    return actualOutput === expectedOutput;
   }
 
 
