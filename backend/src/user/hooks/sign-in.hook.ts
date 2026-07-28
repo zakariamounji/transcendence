@@ -29,4 +29,27 @@ export class SignInHook {
 
     if (id) await this.userService.updateStatus(id, "OFFLINE");
   }
+
+  // a hook to update the role of user to admin only if his email is test@gmail.com, on sign-up and social providers.
+  @AfterHook("/sign-in/social")
+  async handleSignUp(ctx: AuthHookContext) {
+    const id = ctx.context.newSession?.user?.id;
+    const email = ctx.context.newSession?.user?.email;
+    const role = ctx.context.newSession?.user?.role;
+    const provider = ctx.context.newSession?.user?.provider;
+
+    if (provider !== "42-school")
+      return;
+
+    const adminEmails = [
+      "abifkirn@student.1337.ma",
+      "bnafiai@student.1337.ma",
+      "zmounji@student.1337.ma",
+      "abdael-m@student.1337.ma",
+    ];
+
+    if (id && adminEmails.includes(email) && role !== "ADMIN") {
+      await this.userService.updateRole(id, { role: "ADMIN" });
+    }
+  }
 }
