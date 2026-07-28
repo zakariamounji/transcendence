@@ -1,14 +1,20 @@
 "use client"
 import { useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import type { ProfileInfo } from "@/interfaces"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { statusMeta } from "@/components/profile/avatar"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Loading03Icon, UserShield01Icon } from "@hugeicons/core-free-icons"
+import { promoteToAdmin } from "@/lib/admin"
 import { cn } from "@/lib/utils"
 
 const PER_PAGE = 10
+
+const HEADS = ["#", "Player", "Level", "Wins", "Losses", "Win rate", "Status"]
 
 type Filter = "ALL" | ProfileInfo["status"]
 
@@ -58,16 +64,45 @@ function Rank({ rank }: { rank: number }): React.JSX.Element {
 
 export default function RankingBoard({
   profiles,
-  viewerId
+  viewerId,
+  viewerRole
 }: {
   // already ordered by the backend: level, then exp, then wins
   profiles: ProfileInfo[]
   viewerId: string
+  viewerRole: ProfileInfo["role"]
 }): React.JSX.Element {
+
+  const router = useRouter()
 
   const [query, setQuery] = useState<string>("")
   const [filter, setFilter] = useState<Filter>("ALL")
   const [page, setPage] = useState<number>(1)
+
+  // only an admin can hand out the role, so only an admin is shown the column
+  const canPromote = viewerRole === "ADMIN"
+
+  const [promoting, setPromoting] = useState<string | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
+
+  async function promote(id: string): Promise<void> {
+    if (promoting) return
+
+    setPromoting(id)
+    setProblem(null)
+
+    const message = await promoteToAdmin(id)
+
+    setPromoting(null)
+
+    if (message) {
+      setProblem(message)
+      return
+    }
+
+    // the board is fed by a server component, this is what makes it read the new role
+    router.refresh()
+  }
 
   // the rank is the seat at the table, so it is handed out before anything is filtered
   const ranked = profiles.map((profile, index) => ({ profile, rank: index + 1 }))
@@ -130,6 +165,12 @@ export default function RankingBoard({
         </div>
       </div>
 
+      {problem && (
+        <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-400">
+          {problem}
+        </p>
+      )}
+
       {rows.length === 0 ? (
         <p className="mt-6 text-[12px] text-faint"> Nobody matches that. </p>
       ) : (
@@ -137,7 +178,7 @@ export default function RankingBoard({
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-line-soft bg-surface-2/80 text-left">
-                {["#", "Player", "Level", "Wins", "Losses", "Win rate", "Status"].map((head) => (
+                {(canPromote ? [...HEADS, "Role"] : HEADS).map((head) => (
                   <th
                     key={head}
                     className="px-3 py-2 text-[10px] font-medium tracking-wide text-dim uppercase whitespace-nowrap"
@@ -208,6 +249,36 @@ export default function RankingBoard({
                         {statusMeta[profile.status].label}
                       </span>
                     </Cell>
+
+                    {canPromote && (
+                      <Cell>
+                        {profile.role === "ADMIN" ? (
+                          <span className={cn(
+                            "rounded-full border border-brand/40 bg-brand/15 px-2 py-0.5",
+                            "text-[9px] tracking-wide text-brand-bright uppercase"
+                          )}> Admin </span>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={() => promote(profile.id)}
+                            disabled={promoting !== null}
+                            className={cn(
+                              `h-7 cursor-pointer gap-1.5 border border-line bg-surface-3 px-2.5 text-[11px]
+                              text-foreground transition-colors hover:border-brand/50 hover:bg-surface-3/80`,
+                              promoting !== null && "cursor-not-allowed opacity-50"
+                            )}
+                          >
+                            <HugeiconsIcon
+                              icon={promoting === profile.id ? Loading03Icon : UserShield01Icon}
+                              size={13}
+                              strokeWidth={1.8}
+                              className={promoting === profile.id ? "animate-spin" : undefined}
+                            />
+                            Make admin
+                          </Button>
+                        )}
+                      </Cell>
+                    )}
                   </tr>
                 )
               })}

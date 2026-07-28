@@ -20,8 +20,13 @@ build
 .vercel
 
 # env
-.env.local
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# uploaded avatars
+/public/avatars/*
+!/public/avatars/.gitkeep
