@@ -24,17 +24,25 @@ import { useState } from "react"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group"
 import { useRouter } from "next/navigation"
 
+<<<<<<< HEAD
 // The backend caps the reward, so it is not something the creator gets to pick
 const EXP_REWARD = 6
 
+=======
+>>>>>>> zmounji
 export default function CreateChallengePrompt(): React.JSX.Element {
 
   const router = useRouter()
 
   const [loading, setLoading] = useState(false)
 
+<<<<<<< HEAD
   const [title, setTitle] = useState<string>("")
   const [description, setDescription] = useState<string>("")
+=======
+  const [title, setTitle] = useState<string>("To uppercase a string in C")
+  const [description, setDescription] = useState<string>("Create a program that takes a string as input and converts it to uppercase using C programming language.")
+>>>>>>> zmounji
   const [difficulty, setDifficulty] = useState<"EASY" | "MEDIUM" | "HARD">("EASY")
   const [language, setLanguage] = useState<string>("C")
 
@@ -71,7 +79,11 @@ export default function CreateChallengePrompt(): React.JSX.Element {
         slug: title.toLowerCase().replace(/ /g, "-"),
         difficulty,
         language,
+<<<<<<< HEAD
         expReward: EXP_REWARD,
+=======
+        expReward: 6,
+>>>>>>> zmounji
         subject: input,
         expectedOutput: output,
       })
@@ -80,8 +92,13 @@ export default function CreateChallengePrompt(): React.JSX.Element {
     if (res.ok) {
       alert("Challenge created successfully!")
       setOpen(false)
+<<<<<<< HEAD
       setTitle("")
       setDescription("")
+=======
+      setTitle("To uppercase a string in C")
+      setDescription("Create a program that takes a string as input and converts it to uppercase using C programming language.")
+>>>>>>> zmounji
       setInput("")
       setOutput("")
       setDifficulty("EASY")
@@ -130,9 +147,15 @@ export default function CreateChallengePrompt(): React.JSX.Element {
           <FieldGroup>
 
             <Field>
+<<<<<<< HEAD
               <Label htmlFor="create-challenge-title"> Title </Label>
               <Input
                 id="create-challenge-title"
+=======
+              <Label htmlFor="title"> Title </Label>
+              <Input
+                id="title"
+>>>>>>> zmounji
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="h-10"
@@ -140,10 +163,17 @@ export default function CreateChallengePrompt(): React.JSX.Element {
             </Field>
 
             <Field>
+<<<<<<< HEAD
               <FieldLabel htmlFor="create-challenge-description"> Description </FieldLabel>
               <InputGroup className="h-auto">
                 <InputGroupInput
                   id="create-challenge-description"
+=======
+              <FieldLabel htmlFor="description"> Description </FieldLabel>
+              <InputGroup className="h-auto">
+                <InputGroupInput
+                  id="description"
+>>>>>>> zmounji
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="h-10"
@@ -160,13 +190,23 @@ export default function CreateChallengePrompt(): React.JSX.Element {
               <FieldGroup className="gap-3">
                 <Field orientation="horizontal">
                   <Checkbox
+<<<<<<< HEAD
                     id="create-challenge-difficulty-easy"
                     name="create-challenge-difficulty-easy"
+=======
+                    id="finder-pref-9k2-hard-disks-ljj-checkbox"
+                    name="finder-pref-9k2-hard-disks-ljj-checkbox"
+                    defaultChecked
+>>>>>>> zmounji
                     onCheckedChange={(checked) => checked && setDifficulty("EASY")}
                     checked={difficulty === "EASY"}
                   />
                   <FieldLabel
+<<<<<<< HEAD
                     htmlFor="create-challenge-difficulty-easy"
+=======
+                    htmlFor="finder-pref-9k2-hard-disks-ljj-checkbox"
+>>>>>>> zmounji
                     className="font-normal"
                   >
                     EASY
@@ -174,13 +214,22 @@ export default function CreateChallengePrompt(): React.JSX.Element {
                 </Field>
                 <Field orientation="horizontal">
                   <Checkbox
+<<<<<<< HEAD
                     id="create-challenge-difficulty-medium"
                     name="create-challenge-difficulty-medium"
+=======
+                    id="finder-pref-9k2-external-disks-1yg-checkbox"
+                    name="finder-pref-9k2-external-disks-1yg-checkbox"
+>>>>>>> zmounji
                     onCheckedChange={(checked) => checked && setDifficulty("MEDIUM")}
                     checked={difficulty === "MEDIUM"}
                   />
                   <FieldLabel
+<<<<<<< HEAD
                     htmlFor="create-challenge-difficulty-medium"
+=======
+                    htmlFor="finder-pref-9k2-external-disks-1yg-checkbox"
+>>>>>>> zmounji
                     className="font-normal"
                   >
                     MEDIUM
@@ -188,13 +237,22 @@ export default function CreateChallengePrompt(): React.JSX.Element {
                 </Field>
                 <Field orientation="horizontal">
                   <Checkbox
+<<<<<<< HEAD
                     id="create-challenge-difficulty-hard"
                     name="create-challenge-difficulty-hard"
+=======
+                    id="finder-pref-9k2-cds-dvds-fzt-checkbox"
+                    name="finder-pref-9k2-cds-dvds-fzt-checkbox"
+>>>>>>> zmounji
                     onCheckedChange={(checked) => checked && setDifficulty("HARD")}
                     checked={difficulty === "HARD"}
                   />
                   <FieldLabel
+<<<<<<< HEAD
                     htmlFor="create-challenge-difficulty-hard"
+=======
+                    htmlFor="finder-pref-9k2-cds-dvds-fzt-checkbox"
+>>>>>>> zmounji
                     className="font-normal"
                   >
                     HARD
@@ -211,13 +269,22 @@ export default function CreateChallengePrompt(): React.JSX.Element {
                 {languagesList.map((lang) => (
                     <Field orientation="horizontal" key={lang}>
                       <Checkbox
+<<<<<<< HEAD
                         id={`create-challenge-language-${lang}`}
                         name={`create-challenge-language-${lang}`}
+=======
+                        id={`finder-pref-9k2-${lang}-checkbox`}
+                        name={`finder-pref-9k2-${lang}-checkbox`}
+>>>>>>> zmounji
                         onCheckedChange={() => setLanguage(lang)}
                         checked={lang === language}
                       />
                       <FieldLabel
+<<<<<<< HEAD
                         htmlFor={`create-challenge-language-${lang}`}
+=======
+                        htmlFor={`finder-pref-9k2-${lang}-checkbox`}
+>>>>>>> zmounji
                         className="font-normal"
                       >
                         {lang}
@@ -229,10 +296,17 @@ export default function CreateChallengePrompt(): React.JSX.Element {
             </Field>
 
             <Field>
+<<<<<<< HEAD
               <FieldLabel htmlFor="create-challenge-input"> Program Input </FieldLabel>
               <InputGroup className="h-auto">
                 <InputGroupInput
                   id="create-challenge-input"
+=======
+              <FieldLabel htmlFor="input"> Program Input </FieldLabel>
+              <InputGroup className="h-auto">
+                <InputGroupInput
+                  id="input"
+>>>>>>> zmounji
                   placeholder="hello world"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -242,6 +316,7 @@ export default function CreateChallengePrompt(): React.JSX.Element {
                   <InputGroupText> INPUT </InputGroupText>
                 </InputGroupAddon>
               </InputGroup>
+<<<<<<< HEAD
               <FieldDescription> Your program&apos;s input, info: the input is just ONE argument </FieldDescription>
             </Field>
 
@@ -250,6 +325,16 @@ export default function CreateChallengePrompt(): React.JSX.Element {
               <InputGroup className="h-auto">
                 <InputGroupInput
                   id="create-challenge-output"
+=======
+              <FieldDescription> Your program's input, info: the input just ONE argument </FieldDescription>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="output"> Program Output </FieldLabel>
+              <InputGroup className="h-auto">
+                <InputGroupInput
+                  id="output"
+>>>>>>> zmounji
                   placeholder="HELLO WORLD"
                   value={output}
                   onChange={(e) => setOutput(e.target.value)}
@@ -259,7 +344,11 @@ export default function CreateChallengePrompt(): React.JSX.Element {
                   <InputGroupText> OUTPUT </InputGroupText>
                 </InputGroupAddon>
               </InputGroup>
+<<<<<<< HEAD
               <FieldDescription> Your program&apos;s output, the expected result for that input </FieldDescription>
+=======
+              <FieldDescription> Your program's output that should be the result of the input </FieldDescription>
+>>>>>>> zmounji
             </Field>
 
           </FieldGroup>

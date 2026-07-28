@@ -21,11 +21,19 @@ export default function Challenges({
 
       <p className="text-lg font-bold mt-6"> Your Challenges </p>
 
+<<<<<<< HEAD
       <ChallengeGrid challenges={myChallenges} isAdmin={isAdmin} createdById={createdById}/>
 
       <p className="text-lg font-bold mt-6"> All Challenges </p>
 
       <ChallengeGrid challenges={allChallenges} isAdmin={isAdmin} createdById={createdById}/>
+=======
+      <ChallengeGrid chanllenges={myChallenges} isAdmin={isAdmin} createdById={createdById}/>
+
+      <p className="text-lg font-bold mt-6"> All Challenges </p>
+
+      <ChallengeGrid chanllenges={allChallenges} isAdmin={isAdmin} createdById={createdById}/>
+>>>>>>> zmounji
 
     </div>
   )

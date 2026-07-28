@@ -2,37 +2,29 @@ groups:
   - name: transcendence_alerts
     rules:
       - alert: DatabaseDown
-        expr: pg_up == 0
+        expr: postgres == 0
         for: 30s
         labels:
           severity: critical
         annotations:
-          summary: "PostgreSQL is DOWN"
-          description: "The postgres exporter cannot reach the database."
+          summary: "PostgreSQL Database is DOWN"
+          description: "The database container has stopped responding or the exporter cannot reach it."
 
       - alert: BackendDown
-        expr: up{job="backend"} == 0
+        expr: up{job="nestjs-backend-local"} == 0
         for: 30s
         labels:
           severity: critical
         annotations:
-          summary: "NestJS backend is DOWN"
+          summary: "NestJS Backend is DOWN"
           description: "The backend service has crashed or is unreachable."
 
-      - alert: HostHighMemory
-        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
-        for: 2m
+      - alert: ContainerHighMemory
+        expr: (container_memory_working_set_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) * 100 > 85
+        for: 1m
         labels:
           severity: warning
         annotations:
-          summary: "Host memory usage above 90%"
-          description: "The host is running out of memory."
+          summary: "Container running out of memory"
+          description: "Container {{ $labels.name }} is using more than 85% of its memory limit."
 
-      - alert: HostHighCpu
-        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 90
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Host CPU usage above 90%"
-          description: "Sustained high CPU usage on the host."
