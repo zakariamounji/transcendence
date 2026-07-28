@@ -31,15 +31,12 @@ export class SignInHook {
   }
 
   // a hook to update the role of user to admin only if his email is test@gmail.com, on sign-up and social providers.
-  @AfterHook("/sign-in/social")
-  async handleSignUp(ctx: AuthHookContext) {
-    const id = ctx.context.newSession?.user?.id;
-    const email = ctx.context.newSession?.user?.email;
-    const role = ctx.context.newSession?.user?.role;
-    const provider = ctx.context.newSession?.user?.provider;
+  @AfterHook("/oauth2/callback/:providerId")
+  async handleSignIn(ctx: AuthHookContext) {
+    if (ctx.params?.providerId !== "42-school") return;
 
-    if (provider !== "42-school")
-      return;
+    const user = ctx.context.newSession?.user;
+    if (!user) return;
 
     const adminEmails = [
       "abifkirn@student.1337.ma",
@@ -48,8 +45,8 @@ export class SignInHook {
       "abdael-m@student.1337.ma",
     ];
 
-    if (id && adminEmails.includes(email) && role !== "ADMIN") {
-      await this.userService.updateRole(id, { role: "ADMIN" });
+    if (adminEmails.includes(user.email) && user.role !== "ADMIN") {
+      await this.userService.updateRole(user.id, { role: "ADMIN" });
     }
   }
 }
