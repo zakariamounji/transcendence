@@ -40,7 +40,6 @@ function Cell({ children, className }: { children: React.ReactNode, className?: 
   return <td className={cn("px-3 py-3 text-[13px] whitespace-nowrap", className)}> {children} </td>
 }
 
-// gold, silver and bronze for the podium, everyone else is just a number
 const podium: Record<number, string> = {
   1: "border-amber-400/40 bg-amber-400/15 text-amber-300",
   2: "border-slate-300/40 bg-slate-300/15 text-slate-200",
@@ -67,7 +66,6 @@ export default function RankingBoard({
   viewerId,
   viewerRole
 }: {
-  // already ordered by the backend: level, then exp, then wins
   profiles: ProfileInfo[]
   viewerId: string
   viewerRole: ProfileInfo["role"]
@@ -79,7 +77,6 @@ export default function RankingBoard({
   const [filter, setFilter] = useState<Filter>("ALL")
   const [page, setPage] = useState<number>(1)
 
-  // only an admin can hand out the role, so only an admin is shown the column
   const canPromote = viewerRole === "ADMIN"
 
   const [promoting, setPromoting] = useState<string | null>(null)
@@ -100,11 +97,9 @@ export default function RankingBoard({
       return
     }
 
-    // the board is fed by a server component, this is what makes it read the new role
     router.refresh()
   }
 
-  // the rank is the seat at the table, so it is handed out before anything is filtered
   const ranked = profiles.map((profile, index) => ({ profile, rank: index + 1 }))
 
   const needle = query.trim().toLowerCase()
@@ -116,7 +111,6 @@ export default function RankingBoard({
 
   const pages = Math.max(1, Math.ceil(found.length / PER_PAGE))
 
-  // a filter can shrink the list under the page that is being read
   const current = Math.min(page, pages)
   const rows = found.slice((current - 1) * PER_PAGE, current * PER_PAGE)
 
@@ -238,7 +232,7 @@ export default function RankingBoard({
                       </span>
                     </Cell>
 
-                    <Cell className="font-medium tabular-nums text-brand-bright"> {profile.level} </Cell>
+                    <Cell className="font-medium tabular-nums text-brand-bright"> {profile.level}.{profile.exp % 100} </Cell>
                     <Cell className="tabular-nums text-emerald-400"> {profile.wins} </Cell>
                     <Cell className="tabular-nums text-red-400/80"> {profile.losses} </Cell>
                     <Cell className="tabular-nums text-dim"> {winRate}% </Cell>
