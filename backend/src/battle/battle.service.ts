@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject } from "@nestjs/common";
 import { BattleMode, BattleStatus, BattleVisibility, UserStatus } from "@prisma/client";
 import { DatabaseService } from "src/database/database.service";
 import { CreateBattleDto } from "./dto/create-battle.dto";
 import { UserService } from "src/user/user.service";
+import { REDIS_CLIENT} from "./redis/redis.module";
+import Redis from "ioredis/built/Redis";
 
 
 const MAX_PLAYERS_BY_MODE: Record<BattleMode, number> = {
@@ -13,7 +15,7 @@ const MAX_PLAYERS_BY_MODE: Record<BattleMode, number> = {
 
 @Injectable()
 export class BattleService {
-  constructor(private readonly db: DatabaseService, private readonly userService: UserService) {}
+  constructor(private readonly db: DatabaseService, private readonly userService: UserService, @Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
   async createBattle(creatorId: string, dto: CreateBattleDto) {
   const maxPlayers = MAX_PLAYERS_BY_MODE[dto.mode];
@@ -67,11 +69,13 @@ export class BattleService {
     // update the player status to IN_BATTLE when they join a battle, using the user service
     await this.userService.updateStatus(userId, "IN_BATTLE");
 
-    return await this.db.battle.update({
+    const updatedBattle = await this.db.battle.update({
       where: { bid: battleId },
       data: { players: { connect: { id: userId } } },
       include: { players: true, challenge: true },
     });
+    await this.redis.del(`battle:${battleId}`); // invalidate cache
+    return updatedBattle;
   }
 //---------------------------------------------------------------------- 
   async leaveBattle(userId: string, battleId: string) {
@@ -121,6 +125,10 @@ export class BattleService {
       });
 
       // battle keeps running — remaining player(s) still need to actually solve it to win
+      if (updated)
+      {
+        await this.redis.del(`battle:${battleId}`); // invalidate cache
+      }
       return updated;
     });
   }
@@ -133,10 +141,12 @@ export class BattleService {
     if (battle.status !== BattleStatus.WAITING) {
       throw new BadRequestException("Battle already started or finished");
     }
-    return this.db.battle.update({
+    const updatedBattle = await this.db.battle.update({
       where: { bid: battleId },
       data: { status: BattleStatus.RUNNING, startedAt: new Date() },
     });
+    await this.redis.del(`battle:${battleId}`); // invalidate cache
+    return updatedBattle;
   }
 
   // Called by your game/judge logic when a battle resolves — not a raw client PATCH
@@ -162,10 +172,12 @@ export class BattleService {
       }
     }
 
-    return this.db.battle.update({
+    const updatedBattle = await this.db.battle.update({
       where: { bid: battleId },
       data: { status: BattleStatus.COMPLETED, endedAt: new Date(), winnerId },
     });
+    await this.redis.del(`battle:${battleId}`); // invalidate cache
+    return updatedBattle;
   }
 
   async cancelBattle(userId: string, battleId: string) {
@@ -184,13 +196,15 @@ export class BattleService {
         data: { status: UserStatus.ONLINE },
       });
 
-      return tx.battle.update({
+      const updatedBattle = await tx.battle.update({
         where: { bid: battleId },
         data: {
           status: BattleStatus.CANCELLED,
           players: { disconnect: battle.players.map((p) => ({ id: p.id })) },
         },
       });
+      await this.redis.del(`battle:${battleId}`); // invalidate cache
+      return updatedBattle;
     });
   }
 
@@ -206,7 +220,16 @@ export class BattleService {
   }
 
   async findBattleOrThrow(battleId: string) {
+    const cachedBattle = await this.redis.get(`battle:${battleId}`);
+    if (cachedBattle) {
+      return JSON.parse(cachedBattle);
+    }
     const battle = await this.db.battle.findUnique({ where: { bid: battleId }, include: {players: true, challenge: true} });
+    if (battle)
+    {
+      await this.redis.set(`battle:${battleId}`, JSON.stringify(battle), 'EX', 60 * 5); // cache for 5 minutes
+      console.log(`Battle ${battleId} cached in Redis`);
+    }
     if (!battle) throw new NotFoundException(`Battle ${battleId} not found`);
     return battle;
   }

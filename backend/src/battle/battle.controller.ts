@@ -29,10 +29,10 @@ export class BattleController {
   //   return this.battleService.startBattle(session.user.id, battleId);
   // }
 
-  @Patch(":battleId/cancel")
-  cancel(@Session() session: UserSession, @Param("battleId") battleId: string) {
-    return this.battleService.cancelBattle(session.user.id, battleId);
-  }
+  // @Post(":battleId/cancel")
+  // cancel(@Session() session: UserSession, @Param("battleId") battleId: string) {
+  //   return this.battleService.cancelBattle(session.user.id, battleId);
+  // }
 
   @Get ('current')
   getCurrentBattle(@Session() session: UserSession) {

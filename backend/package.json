@@ -37,6 +37,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "express-rate-limit": "^8.6.0",
+    "ioredis": "^5.11.1",
     "pg": "^8.22.0",
     "rate-limiter-flexible": "^11.2.0",
     "reflect-metadata": "^0.2.2",

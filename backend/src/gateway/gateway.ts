@@ -1,4 +1,4 @@
-import { OnModuleInit, UseGuards } from '@nestjs/common';
+import { Inject, OnModuleInit, UseGuards } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer, WsException } from '@nestjs/websockets';
 import { AuthGuard, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { Server, Socket } from 'socket.io';
@@ -11,6 +11,9 @@ import { stat } from 'fs';
 // import { GatewayService } from './gateway.service';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 
+import { REDIS_CLIENT } from 'src/battle/redis/redis.module';
+import Redis from 'ioredis';
+
 @WebSocketGateway({ cors: { origin: '*', credentials: true } })
 @UseGuards(AuthGuard)
 export class MyGateway implements OnModuleInit {
@@ -18,6 +21,7 @@ export class MyGateway implements OnModuleInit {
     private readonly battleService: BattleService,
     private readonly rustboxService: RustboxService,
     /*private readonly gatewayService: GatewayService*/
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   @WebSocketServer()
@@ -254,5 +258,14 @@ export class MyGateway implements OnModuleInit {
       return { error: 'Battle not found' };
     }
     return battle.players;
+  }
+
+  @SubscribeMessage('cancelBattle')
+  async onCancelBattle(@Session() session: UserSession, @MessageBody() data: { battleId: string }) {
+    const battle = await this.battleService.cancelBattle(session.user.id, data.battleId);
+    this.activity.delete(data.battleId);
+    this.server.to(data.battleId).emit('battle:cancelled', { battle });
+    this.lobbyChanged();
+    return battle; // ack
   }
 }
