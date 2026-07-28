@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
     qualities: [70, 80, 90, 100],
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
-      { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
       { protocol: "https", hostname: "cdn.intra.42.fr" }
     ]

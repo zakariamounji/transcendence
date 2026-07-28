@@ -19,7 +19,5 @@ export async function proxy(request: NextRequest): Promise<NextResponse<unknown>
 }
 
 export const config = {
-  // uploaded avatars are read straight off /avatars, so every picture format is let through,
-  // not only the png the favicon needed
   matcher: "/((?!api|terms-of-service|privacy-policy|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|webp|gif|svg)$).*)"
 }

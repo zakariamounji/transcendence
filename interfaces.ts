@@ -47,7 +47,6 @@ interface Battle {
   status: "WAITING" | "RUNNING" | "COMPLETED" | "CANCELLED"
   visibility: "PUBLIC" | "PRIVATE"
   maxPlayers: number
-  // only a private battle carries one, and only its own players are told about it
   roomCode: string | null
   durationSeconds: number
   createdAt: string
@@ -57,13 +56,10 @@ interface Battle {
   winnerId: string | null
   challengeId: string
   players: BattlePlayer[]
-  // /battles/all includes both, /battles/current leaves the creator out
   challenge?: Challenge
   creator?: BattlePlayer
 }
 
-// what the judge answers with. AC only means the program ran, the gateway is the one
-// that decides whether what it printed was right
 interface Submission {
   verdict: string
   stdout?: string
