@@ -24,6 +24,7 @@ services:
       - ./backend/.env
     depends_on:
       - db
+      - redis
     networks:
       - mynetwork
 
@@ -41,9 +42,24 @@ services:
     networks:
       - mynetwork
 
+
+  redis:
+      build: ./redis
+      container_name: redis
+      restart: always
+      env_file:
+        - ./redis/.env
+      ports:
+        - "6379:6379"
+      volumes:
+        - redis_data:/data
+      networks:
+        - mynetwork
+
+
 volumes:
   db_data:
-    driver: local
+  redis_data:
 
 networks:
   mynetwork:
