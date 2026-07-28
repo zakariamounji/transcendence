@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Geist_Mono } from "next/font/google"
 import { cn } from "@/lib/utils"
 import "@/app/globals.css"
+import Presence from "@/components/presence"
 
 const GeistMono = Geist_Mono({ subsets:["latin-ext"] })
 
@@ -22,6 +23,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {children}
+        <Presence />
       </body>
     </html>
   )

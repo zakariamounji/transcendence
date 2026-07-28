@@ -2,8 +2,6 @@ import { serverFetch } from "@/lib/server-fetch"
 
 const allowed = new Set(["ONLINE", "OFFLINE"])
 
-// same-origin hop to the backend: the browser attaches the session cookie on its own,
-// so this still works from a sendBeacon fired while the tab is closing
 export async function POST(request: Request): Promise<Response> {
 
   const payload = await request.json().catch(() => null)

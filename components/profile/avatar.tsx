@@ -45,8 +45,7 @@ export default function Avatar({
       ) : (
         <div
           aria-hidden="true"
-          className="flex size-full items-center justify-center rounded-full border border-line
-          bg-surface-3 text-xl font-medium text-dim"
+          className="flex size-full items-center justify-center rounded-full border border-line bg-surface-3 text-xl font-medium text-dim"
         >
           {initials(name)}
         </div>

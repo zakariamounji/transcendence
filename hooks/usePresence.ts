@@ -14,13 +14,13 @@ export function usePresence(): void {
   useEffect(() => {
 
     function send(status: Presence): void {
-      // nothing changed, so skip the round trip
+
       if (sent.current === status) return
       sent.current = status
 
       const body = JSON.stringify({ status })
 
-      // going offline means the tab is already dying, and only a beacon survives that
+      // going offline means the fetch request may not complete, sendBeacon is more reliable in that case.
       if (status === "OFFLINE") {
         navigator.sendBeacon(ENDPOINT, new Blob([body], { type: "application/json" }))
         return
@@ -32,9 +32,8 @@ export function usePresence(): void {
         body,
         keepalive: true
       })
-        // the page was rendered before this request landed, so its status is one step stale
-        .then(() => router.refresh())
-        .catch(() => { sent.current = null })
+      .then(() => router.refresh())
+      .catch(() => { sent.current = null })
     }
 
     function onVisibilityChange(): void {
@@ -47,8 +46,6 @@ export function usePresence(): void {
 
     send("ONLINE")
 
-    // pagehide covers closing and navigating away, visibilitychange covers mobile,
-    // where the tab is often frozen without pagehide ever firing
     document.addEventListener("visibilitychange", onVisibilityChange)
     window.addEventListener("pagehide", onPageHide)
 
