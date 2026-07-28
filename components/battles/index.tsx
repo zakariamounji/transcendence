@@ -10,7 +10,6 @@ export default async function Battles(): Promise<React.JSX.Element> {
     getCurrentBattle()
   ])
 
-  // the board takes it from here, the socket and a short poll keep it current
   return (
     <BattleBoard
       initialBattles={battles}

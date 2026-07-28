@@ -40,8 +40,6 @@ function paint(code: string): React.ReactNode[] {
     const at = match.index ?? 0
     if (at > last) out.push(code.slice(last, at))
 
-    // groups 1..5 line up with TONE, and exactly one of them is set. No padding
-    // inside the span: jsx would turn it into real spaces and shift every line
     const group = TONE.findIndex((_, index) => match[index + 1] !== undefined)
     out.push(group === -1
       ? match[0]
@@ -68,8 +66,6 @@ export default function Editor({
 
   const painted = useRef<HTMLPreElement | null>(null)
 
-  // a textarea would tab away to the next control, and code without indentation is
-  // not code anybody wants to read
   function onKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>): void {
     if (event.key !== "Tab") return
 
@@ -88,7 +84,6 @@ export default function Editor({
   return (
     <div className="relative mt-2">
 
-      {/* the colours live down here, the textarea on top of them is see-through */}
       <pre
         ref={painted}
         aria-hidden="true"

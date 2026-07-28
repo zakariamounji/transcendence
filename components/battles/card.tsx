@@ -15,7 +15,6 @@ export default function BattleCard({
   onJoin
 }: {
   battle: Battle
-  // the player already holds a battle, so this one is only there to be looked at
   busy: boolean
   pending: boolean
   onJoin: (battleId: string, roomCode?: string) => Promise<boolean>
@@ -27,7 +26,6 @@ export default function BattleCard({
   const isFull = battle.players.length >= battle.maxPlayers
   const isOpen = !busy && !isFull && battle.status === "WAITING"
 
-  // a private battle turns away an empty code anyway, so it is not worth the trip
   const canJoin = isOpen && (!isPrivate || roomCode.trim().length > 0)
 
   return (

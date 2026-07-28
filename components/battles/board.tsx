@@ -10,7 +10,7 @@ export default function BattleBoard({
   initialCurrent,
   viewerId
 }: {
-  initialBattles: Battle[]
+  initialBattles:  Battle[]
   initialCurrent: Battle | null
   viewerId: string
 }): React.JSX.Element {
@@ -21,12 +21,10 @@ export default function BattleBoard({
     viewerId
   })
 
-  // the count is the whole lobby, your own battle included, which is what makes it
-  // move the moment you open one
   const waiting = battles.filter((battle) => battle.status === "WAITING").length
   const running = battles.filter((battle) => battle.status === "RUNNING").length
 
-  // the grid below is narrower: only the ones you could actually walk into
+  // the only the battles you could actually walk into
   const open = battles.filter((battle) => (
     battle.status === "WAITING" && !battle.players.some((player) => player.id === viewerId)
   ))

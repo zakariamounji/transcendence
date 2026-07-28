@@ -38,7 +38,6 @@ export default function BattleForm({
   busy
 }: {
   challenge: Challenge
-  // one player holds one battle at a time, so the backend turns the second one down
   busy: boolean
 }): React.JSX.Element {
 
@@ -62,7 +61,6 @@ export default function BattleForm({
 
     const minutes = Number(challenge.timeLimitMin)
 
-    // the dto takes seconds, and only accepts one whole minute up to a whole hour
     if (!Number.isInteger(minutes) || minutes < 1 || minutes > 120) {
       setError("The battle has to run between 1 and 120 minutes.")
       return
@@ -71,8 +69,6 @@ export default function BattleForm({
     setPending(true)
     setError(null)
 
-    // over the socket, so the gateway can put the creator straight into the room of
-    // the battle they just opened
     const { error: message } = await emitBattle("createBattle", {
       challengeId: challenge.cid,
       mode,
@@ -88,7 +84,6 @@ export default function BattleForm({
     }
 
     setOpen(false)
-    // the board is a sibling several levels away, and it reads again on this
     announceBattleChange()
     router.refresh()
   }

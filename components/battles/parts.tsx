@@ -57,8 +57,6 @@ function Fact({ label, value }: { label: string, value: React.ReactNode }): Reac
   )
 }
 
-// what a player is doing, in one word. The judge answers with the short forms, the
-// arena adds "running" and "won" on top of them
 const verdictWord: Record<string, string> = {
   running: "running",
   won: "won",
@@ -96,7 +94,6 @@ function Player({
 }: {
   player: BattlePlayer
   battle: Battle
-  // only the arena has anything to say here
   doing?: string
 }): React.JSX.Element {
 
@@ -171,10 +168,6 @@ function clock(seconds: number): string {
   return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`
 }
 
-/**
- * Counts a running battle down. The gateway owns the real deadline and closes the
- * battle itself, this is only here so the page does not sit still while it runs.
- */
 function Countdown({ battle }: { battle: Battle }): React.JSX.Element {
 
   const [left, setLeft] = useState<number | null>(null)
@@ -190,8 +183,6 @@ function Countdown({ battle }: { battle: Battle }): React.JSX.Element {
       setLeft(Math.round((endsAt - Date.now()) / 1000))
     }
 
-    // the browser clock is only read once this is mounted, so the server render and
-    // the first client render still agree on what they paint
     const first = setTimeout(tick, 0)
     const timer = setInterval(tick, 1000)
 

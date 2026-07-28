@@ -2,19 +2,18 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react"
 import { useRouter } from "next/navigation"
 import type { Battle, BattlePlayer } from "@/interfaces"
-import { cancelBattle, fetchBattles, fetchCurrentBattle } from "@/lib/battles"
+import { fetchBattles, fetchCurrentBattle } from "@/lib/battles"
 import { emitBattle, getSocket, isConnected, subscribeBattleChange, subscribeConnection } from "@/lib/socket"
 
 type Action = "join" | "leave" | "start" | "cancel"
 
-const EVENT_BY_ACTION: Record<"join" | "leave" | "start", string> = {
+const EVENT_BY_ACTION: Record<"join" | "leave" | "start" | "cancel", string> = {
   join: "joinBattle",
   leave: "leaveBattle",
-  start: "startBattle"
+  start: "startBattle",
+  cancel: "cancelBattle"
 }
 
-// the gateway announces every move on lobby:changed, so this is only the net that
-// catches a missed event or a socket that was asleep
 const POLL_MS = 15000
 
 export function useBattles({
@@ -29,18 +28,14 @@ export function useBattles({
 
   const router = useRouter()
 
-  // the server render is the first paint, every read after that happens here
   const [battles, setBattles] = useState<Battle[]>(initialBattles)
   const [current, setCurrent] = useState<Battle | null>(initialCurrent)
   const [pending, setPending] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  // the connection belongs to the tab, not to this component, so it is read as what
-  // it is: an outside store that the server knew nothing about
   const live = useSyncExternalStore(subscribeConnection, isConnected, () => false)
 
-  // two reads can be in the air at once, and the older one must not win
   const readId = useRef<number>(0)
 
   const sync = useCallback(async (): Promise<void> => {
@@ -68,18 +63,15 @@ export function useBattles({
       setCurrent((mine) => (mine && mine.bid === battleId ? { ...mine, ...change } : mine))
     }
 
-    // whatever happened while the socket was down is caught up on in one read
     function onConnect(): void {
       void sync()
     }
 
-    // somebody, somewhere, created or joined or started something
     function onLobbyChanged(): void {
       void sync()
     }
 
     function onPlayersUpdated(data: { battleId: string, players?: BattlePlayer[] }): void {
-      // a battle that empties out is deleted by the backend, and the next read drops it
       if (!data.players) {
         void sync()
         return
@@ -119,17 +111,6 @@ export function useBattles({
     }
   }, [sync, router, viewerId])
 
-  // a reload throws the socket away, and the room membership goes with it, so the
-  // board walks back into its own battle every time the connection is new
-  const currentId = current?.bid ?? null
-
-  useEffect(() => {
-    if (!currentId || !live) return
-    void emitBattle("watchBattle", { battleId: currentId })
-  }, [currentId, live])
-
-  // the net under all of it, for an event that never arrived
-
   useEffect(() => {
     function readWhenVisible(): void {
       if (document.visibilityState === "visible") void sync()
@@ -151,9 +132,8 @@ export function useBattles({
     setError(null)
     setNotice(null)
 
-    const message = action === "cancel"
-      ? await cancelBattle(battleId)
-      : (await emitBattle(EVENT_BY_ACTION[action], action === "join" ? { battleId, roomCode } : { battleId })).error
+    const s = (await emitBattle(EVENT_BY_ACTION[action], action === "join" ? { battleId, roomCode } : { battleId }))
+    const message = s?.error || (typeof s?.message === "string" ? s?.message : Array.isArray(s?.message) ? s?.message.join(" ") : null)
 
     setPending(null)
 
@@ -163,8 +143,6 @@ export function useBattles({
     }
 
     await sync()
-    // the profile card reads the player status, and a challenge card hides its own
-    // create button while a battle is running
     router.refresh()
     return true
   }

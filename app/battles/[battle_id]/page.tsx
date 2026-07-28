@@ -30,7 +30,6 @@ export default async function BattlePage({
     readBattle(battle_id)
   ])
 
-  // a battle that does not exist, and one you are not playing, are the same door
   if (!battle || !battle.players.some((player) => player.id === profile.id)) {
     redirect("/")
   }

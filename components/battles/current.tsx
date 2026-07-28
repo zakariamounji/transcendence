@@ -26,15 +26,12 @@ export default function CurrentBattle({
   const isHost = battle.creatorId === viewerId
   const isWaiting = battle.status === "WAITING"
 
-  // a host closes their own waiting battle with cancel, everyone else walks out, and
-  // the backend only allows either while the battle is still waiting or running
   const canLeave = (!isHost || !isWaiting) && (isWaiting || battle.status === "RUNNING")
 
   function busy(action: string): boolean {
     return pending === `${action}:${battle.bid}`
   }
 
-  // the battle you are actually in, so it is the one thing on the page wearing the brand
   return (
     <div className="rounded-lg border border-brand/30 bg-surface-2 p-4 ring-1 ring-brand/10">
 
@@ -63,7 +60,6 @@ export default function CurrentBattle({
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
 
-        {/* the host starts it, and this shows up for everyone the moment it does */}
         {battle.status === "RUNNING" && (
           <Link
             href={`/battles/${battle.bid}`}
