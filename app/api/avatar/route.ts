@@ -1,11 +1,10 @@
 import { randomUUID } from "node:crypto"
 import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { cookies } from "next/headers"
+import { MAX_BYTES } from "@/lib/avatar"
+import { serverFetch } from "@/lib/server-fetch"
+import type { ProfileInfo } from "@/interfaces"
 
-const MAX_BYTES = 2 * 1024 * 1024
-
-// the file is named after its type, never after what the browser called it
 const extensions: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -17,20 +16,12 @@ function fail(message: string, status: number): Response {
   return Response.json({ message }, { status })
 }
 
-/**
- * Writes an uploaded picture into public/avatars and answers with the path it can be
- * read from. Nothing is written to the database here, the browser does that with
- * better-auth once it has the path.
- */
 export async function POST(request: Request): Promise<Response> {
 
-  // a signed out visitor has no business leaving files on the disk
-  const store = await cookies()
-  const session =
-    store.get("__Secure-better-auth.session_token")?.value ??
-    store.get("better-auth.session_token")?.value
+  const userRes = await serverFetch("/user/me")
+  const user: ProfileInfo = (await userRes.json()).data
 
-  if (!session) {
+  if (!user) {
     return fail("You have to be signed in to change your picture.", 401)
   }
 

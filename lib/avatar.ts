@@ -2,14 +2,8 @@ import { authClient } from "@/lib/auth-client"
 
 const MAX_BYTES = 2 * 1024 * 1024
 
-// what the route handler is willing to write, in the form a file input wants to read it
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif"
 
-/**
- * Two steps behind one call: the file goes to public/avatars through our own route,
- * then the path it landed on becomes the user's image in the database.
- * Returns an error message, or null when both steps succeeded.
- */
 export async function changeAvatar(file: File): Promise<string | null> {
   if (file.size > MAX_BYTES) return "The picture cannot pass 2 MB."
 
@@ -24,7 +18,6 @@ export async function changeAvatar(file: File): Promise<string | null> {
       return payload?.message ?? `The upload failed with ${response.status}.`
     }
 
-    // better-auth owns the user row, so it is the one that writes the new path on it
     const { error } = await authClient.updateUser({ image: payload.path })
 
     if (error) {

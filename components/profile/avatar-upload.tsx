@@ -27,7 +27,7 @@ export default function AvatarUpload({
   async function onPick(event: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = event.target.files?.[0]
 
-    // picking the same file twice has to fire this again, so the input never keeps it
+    // clear file input so that the same file can be picked again if needed
     event.target.value = ""
 
     if (!file || pending) return
@@ -44,7 +44,6 @@ export default function AvatarUpload({
       return
     }
 
-    // the profile is a server component, this is what makes it read the new image
     router.refresh()
   }
 

@@ -19,7 +19,6 @@ const inputClassName = "border border-line h-12 rounded-md p-4 w-full hover:bord
   "bg-transparent dark:bg-transparent " +
   "disabled:bg-transparent dark:disabled:bg-transparent disabled:border-line disabled:opacity-50"
 
-// no colour of its own, it takes whatever the button it sits in is painted with
 function Spinner(): React.JSX.Element {
   return (
     <HugeiconsIcon

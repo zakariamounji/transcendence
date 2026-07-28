@@ -18,7 +18,6 @@ function Badge({
   brand
 }: {
   children: React.ReactNode
-  // the one badge worth noticing, admin, gets the brand behind it
   brand?: boolean
 }): React.JSX.Element {
   return (
@@ -40,7 +39,6 @@ function Stat({
 }: {
   label: string
   value: string | number
-  // wins, losses and win rate carry their own meaning, so they carry their own colour
   tone?: string
 }): React.JSX.Element {
   return (
