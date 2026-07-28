@@ -1,0 +1,32 @@
+# dependencies
+node_modules
+package-lock.json
+
+# testing
+coverage
+
+# next.js
+.next
+out
+
+# production
+build
+
+# misc
+.DS_Store
+*.pem
+
+# vercel
+.vercel
+
+# env
+.env.*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# uploaded avatars
+/public/avatars/*
+!/public/avatars/.gitkeep
