@@ -16,7 +16,7 @@ receivers:
     smarthost: 'smtp.gmail.com:587'           # Official Google SMTP outbound server
     auth_username: 'zakariamounji44499@gmail.com'
     auth_identity: 'zakariamounji44499@gmail.com'
-    auth_password: '66nfrtcjamxchykdkz' # Paste token here  nfrt cjam xchy kdkz
+    auth_password: 'nfrtcjamxchykdkz' # Paste token here  nfrt cjam xchy kdkz
     send_resolved: true                        # Sends a follow-up email when the service turns green again
 
 
