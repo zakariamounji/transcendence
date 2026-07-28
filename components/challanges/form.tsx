@@ -42,22 +42,18 @@ type Draft = {
   timeLimitMin: number
 }
 
-// the upper bounds mirror the backend dto, so it never answers with a validation error
 function findProblem(draft: Draft): string | null {
   if (draft.title.length < 6) return "The title needs at least 6 characters."
   if (draft.title.length > 120) return "The title cannot pass 120 characters."
   if (draft.description.length < 10) return "The description needs at least 10 characters."
   if (draft.description.length > 280) return "The description cannot pass 280 characters."
-  // a challenge is free to need no input at all, it can simply ask for something printed
   if (draft.subject.length > 1000) return "The program input cannot pass 1000 characters."
   if (!draft.expectedOutput) return "The expected output cannot be empty."
   if (draft.expectedOutput.length > 1000) return "The expected output cannot pass 1000 characters."
-  if (!Number.isInteger(draft.expReward) || draft.expReward < 1 || draft.expReward > 100) {
+  if (!Number.isInteger(draft.expReward) || draft.expReward < 1 || draft.expReward > 100)
     return "The reward has to be a whole number between 1 and 100 XP."
-  }
-  if (!Number.isInteger(draft.timeLimitMin) || draft.timeLimitMin < 1 || draft.timeLimitMin > 120) {
+  if (!Number.isInteger(draft.timeLimitMin) || draft.timeLimitMin < 1 || draft.timeLimitMin > 120)
     return "The time limit has to be a whole number between 1 and 120 minutes."
-  }
   return null
 }
 
@@ -70,7 +66,6 @@ export default function ChallengeForm({ challenge }: { challenge?: Challenge }):
   const [pending, setPending] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
-  // what the card was given is only a summary, the full record arrives when the dialog opens
   const [details, setDetails] = useState<Challenge | undefined>(challenge)
   const [loading, setLoading] = useState<boolean>(false)
 
@@ -88,7 +83,6 @@ export default function ChallengeForm({ challenge }: { challenge?: Challenge }):
     const full = await fetchChallenge(challenge.cid)
     setLoading(false)
 
-    // the fields read their defaults on mount, so this has to land before the form renders
     if (full) {
       setDetails(full)
       setDifficulty(full.difficulty)
@@ -132,7 +126,6 @@ export default function ChallengeForm({ challenge }: { challenge?: Challenge }):
       return
     }
 
-    // closing unmounts the dialog, which resets every field back to its default
     setOpen(false)
     router.refresh()
   }

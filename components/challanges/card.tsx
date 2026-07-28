@@ -38,7 +38,6 @@ export default function ChallengeCard({
   canEdit: boolean
   canDelete: boolean
   canPublish: boolean
-  // a player holds one battle at a time, so the button stays there but turns down
   inBattle: boolean
 }): React.JSX.Element {
 

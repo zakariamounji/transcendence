@@ -66,8 +66,7 @@ export default async function Challanges(): Promise<React.JSX.Element> {
 
   const isAdmin = profile.role === "ADMIN"
 
-  // mine already have their own section, and an unpublished one stays hidden from
-  // everyone but an admin
+  // select only challenges that are not mine, and if I'm not admin, only published ones
   const others = all.filter((challenge) => (
     challenge.createdById !== profile.id && (isAdmin || challenge.isPublished)
   ))
