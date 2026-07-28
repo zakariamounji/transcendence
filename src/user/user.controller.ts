@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { UpdateProfileDto } from './dto/updateProfile.dto'
+import { UserRole } from '@prisma/client';
 import { stat } from 'fs';
 import { UserStatus } from '@prisma/client';
 
@@ -30,7 +31,15 @@ export class UserController {
     //     return this.userService.findUserById(session.user.id);
     // }
 
-    @Patch('me')
+    @Post('adminRole')
+    updateAdminRole(@Session() session: UserSession, @Body('userId') userId: string) {
+        if (session.user.role !== 'ADMIN') {
+            throw new UnauthorizedException("Only admins can update roles");
+        }
+        return this.userService.updateRole(userId, { role: 'ADMIN' });
+    }
+
+    @Post('me')
     updateUser(@Session() session: UserSession, @Body() dto: UpdateProfileDto) {
         return this.userService.updateProfile(session.user.id, dto);
     }

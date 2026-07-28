@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { DatabaseService } from "src/database/database.service";
 import { UpdateProfileDto } from "./dto/updateProfile.dto";
-import { BattleStatus, UserStatus } from "@prisma/client";
+import { BattleStatus, UserRole, UserStatus } from "@prisma/client";
 
 @Injectable()
 export class UserService {
@@ -75,5 +75,13 @@ export class UserService {
         level: newLevel,
       },
     });
+  }
+
+  async updateRole(id: string, data: { role: UserRole }) {
+    const user = await this.findUserById(id);
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    return this.db.user.update({ where: { id }, data });
   }
 }
