@@ -228,7 +228,7 @@ export class BattleService {
     if (battle)
     {
       await this.redis.set(`battle:${battleId}`, JSON.stringify(battle), 'EX', 60 * 5); // cache for 5 minutes
-      console.log(`Battle ${battleId} cached in Redis`);
+      // console.log(`Battle ${battleId} cached in Redis`);
     }
     if (!battle) throw new NotFoundException(`Battle ${battleId} not found`);
     return battle;
