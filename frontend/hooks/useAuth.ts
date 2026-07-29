@@ -20,12 +20,13 @@ export function useAuth() {
 
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // "/" is behind the proxy, prefetching it while there is no session caches the
+  // redirect back to "/auth", and the first push("/") after signing in replays it.
   useEffect(() => {
-    router.prefetch("/")
     return () => {
       if (errorTimer.current) clearTimeout(errorTimer.current)
     }
-  }, [router])
+  }, [])
 
   function scheduleReset(clearLoading: boolean = false): void {
     if (errorTimer.current) clearTimeout(errorTimer.current)
@@ -95,6 +96,9 @@ export function useAuth() {
   async function signInSocial(provider: string) {
     try {
       setIsLoading(provider)
+      // better-auth answers with the provider url and sends the browser there itself.
+      // routing anywhere on success aborts that pending navigation, which is why the
+      // first click only looked like a refresh, so on success we just let it leave.
       const data = await authClient.signIn.social({
         provider: provider,
         callbackURL: process.env.NEXT_PUBLIC_FRONTEND_URL!
@@ -102,12 +106,10 @@ export function useAuth() {
       if (data.error) {
         setErrorMessage(data.error.message || "An unexpected error occurred. Please try again.")
         setIsLoading(null)
-      } else {
-        router.push("/")
-        router.refresh()
       }
     } catch {
       setErrorMessage("An unexpected error occurred. Please try again.")
+      setIsLoading(null)
     } finally {
       scheduleReset(true)
     }
