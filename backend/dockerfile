@@ -11,7 +11,6 @@ COPY prisma ./prisma/
 
 # Install dependencies and generate Prisma client
 RUN npm ci
-RUN npx prisma generate
 
 # Copy source code and build NestJS
 COPY . .
@@ -19,5 +18,4 @@ RUN npm run build
 
 EXPOSE 3000
 
-# Push DB schema and start server
-CMD ["sh", "-c", "npx prisma db push && npm run start:prod"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
