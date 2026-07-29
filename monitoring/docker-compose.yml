@@ -182,6 +182,38 @@ services:
     networks:
       - mynetwork
 
+  # One-shot init: imports the saved objects (index patterns/dashboards)
+  # exported from Kibana's Stack Management > Saved Objects UI, so a fresh
+  # clone gets the logs view already configured instead of it being
+  # recreated by hand.
+  kibana-setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: kibana-setup
+    env_file:
+      - ../.env
+    volumes:
+      - ./kibana/export.ndjson:/export.ndjson:ro
+    depends_on:
+      - kibana
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -e
+        echo "Waiting for Kibana to come up..."
+        until [ "$$(curl -s -o /dev/null -w '%{http_code}' -u "elastic:$${ELASTIC_PASSWORD}" http://kibana:5601/api/status)" = "200" ]; do
+          sleep 2
+        done
+        echo "Importing Kibana saved objects..."
+        curl -sS -f -u "elastic:$${ELASTIC_PASSWORD}" \
+          -X POST "http://kibana:5601/api/saved_objects/_import?overwrite=true" \
+          -H "kbn-xsrf: true" \
+          -F file=@/export.ndjson
+        echo "Kibana saved objects imported."
+    restart: "no"
+    networks:
+      - mynetwork
+
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.12.0
     container_name: filebeat
