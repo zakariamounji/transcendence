@@ -27,7 +27,7 @@ export class UserService {
     const U = await this.findUserById(id)
     if (!U)
       throw new NotFoundException(`User with id ${id} not found`);
-    if (U.status === UserStatus.IN_BATTLE)
+    if (U.status === UserStatus.IN_BATTLE) 
       throw new UnauthorizedException("Cannot set status to IN_BATTLE directly. Use the battle endpoints instead.");
     return this.db.user.update({ where: { id }, data: { status, lastSeen: new Date() } });
   }

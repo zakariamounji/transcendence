@@ -1,13 +1,10 @@
-import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
+import { getSessionToken } from "@/lib/session"
 
 export async function proxy(request: NextRequest): Promise<NextResponse<unknown>> {
   const { pathname } = request.nextUrl
-  const store = await cookies()
 
-  const t =
-    store.get("__Secure-better-auth.session_token")?.value ??
-    store.get("better-auth.session_token")?.value
+  const t = await getSessionToken()
 
   if (pathname.startsWith("/auth") && t)
     return NextResponse.redirect(new URL("/", request.url))
