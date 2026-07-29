@@ -6,7 +6,7 @@ const allowed = new Set(["ONLINE", "OFFLINE"])
 export async function POST(request: Request): Promise<Response> {
 
   if (!(await getSessionToken())) {
-    return new Response(null, { status: 401 })
+    return new Response("you are not authenticated", { status: 200 })
   }
 
   const payload = await request.json().catch(() => null)
