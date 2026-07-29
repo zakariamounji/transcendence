@@ -1,5 +1,4 @@
-import { statusMeta } from "@/components/profile/avatar"
-import AvatarUpload from "@/components/profile/avatar-upload"
+import Avatar, { statusMeta } from "@/components/profile/avatar"
 import SignOut from "@/components/profile/sign-out"
 import { getProfile } from "@/lib/profile"
 import { getPlayers, rankOf } from "@/lib/ranking"
@@ -69,7 +68,7 @@ export default async function Profile(): Promise<React.JSX.Element> {
 
       <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-center sm:text-left">
 
-        <AvatarUpload name={profile.name} image={profile.image} status={profile.status} />
+        <Avatar name={profile.name} image={profile.image} status={profile.status} />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">

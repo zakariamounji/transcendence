@@ -48,8 +48,6 @@ services:
     container_name: frontend
     env_file:
       - .env
-    volumes:
-      - public_avatars_data:/app/public/avatars
     depends_on:
       - backend
     networks:
@@ -71,7 +69,6 @@ services:
 volumes:
   db_data:
   redis_data:
-  public_avatars_data:
 
 networks:
   mynetwork:

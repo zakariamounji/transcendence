@@ -3,7 +3,7 @@ import type { NextConfig } from "next"
 const nextConfig: NextConfig = {
   reactCompiler: true,
   images: {
-    qualities: [70, 80, 90, 100],
+    qualities: [70, 75, 80, 90, 100],
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
