@@ -21,9 +21,14 @@ groups:
           summary: "postgres-exporter is unreachable"
           description: "Prometheus cannot scrape postgres-exporter, so database health is unknown."
 
-      # BackendDown was removed: the backend exposes no /metrics endpoint, so the
-      # rule fired permanently. Restore it together with the scrape job in
-      # prometheus.yml once the backend is instrumented.
+      - alert: BackendDown
+        expr: up{job="nestjs-backend"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend service is DOWN"
+          description: "Prometheus cannot scrape the NestJS backend at {{ $labels.instance }}."
 
       - alert: ContainerHighMemory
         # container_spec_memory_limit_bytes is 0 for containers without a memory

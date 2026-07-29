@@ -44,12 +44,9 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
   
-  # Disabled: the NestJS backend has no /metrics endpoint, so this target was
-  # permanently DOWN and kept the BackendDown alert firing. Re-enable once the
-  # backend exposes Prometheus metrics (e.g. via prom-client).
-  # - job_name: 'nestjs-backend-local'
-  #   static_configs:
-  #     - targets: ['backend:3000']
+  - job_name: 'nestjs-backend'
+    static_configs:
+      - targets: ['backend:3000']
 
   - job_name: 'postgres'
     static_configs:

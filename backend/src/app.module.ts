@@ -8,9 +8,18 @@ import { BattleModule } from './battle/battle.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { ChallengeModule } from './challenge/challenge.module';
 import { RateLimitMiddleware } from './middleware/rate-limit.middleware';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, UserModule, BattleModule, GatewayModule, ChallengeModule],
+  imports: [
+    DatabaseModule,
+    AuthModule,
+    UserModule,
+    BattleModule,
+    GatewayModule,
+    ChallengeModule,
+    MetricsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
