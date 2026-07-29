@@ -101,16 +101,6 @@ services:
       - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
       - "9200:9200"
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - >-
-          curl -s -u "elastic:$${ELASTIC_PASSWORD}" http://localhost:9200/_cluster/health
-          | grep -qE '"status":"(green|yellow)"'
-      interval: 10s
-      timeout: 10s
-      retries: 30
-      start_period: 40s
     networks:
       - mynetwork
 
@@ -123,13 +113,16 @@ services:
     env_file:
       - ../.env
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
     entrypoint:
       - /bin/bash
       - -c
       - |
         set -e
+        echo "Waiting for Elasticsearch security to come up..."
+        until [ "$$(curl -s -o /dev/null -w '%{http_code}' -u "elastic:$${ELASTIC_PASSWORD}" http://elasticsearch:9200)" = "200" ]; do
+          sleep 2
+        done
         echo "Setting the kibana_system password..."
         curl -sS -f -u "elastic:$${ELASTIC_PASSWORD}" \
           -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" \
@@ -156,16 +149,7 @@ services:
     ports:
       - "5044:5044"
     depends_on:
-      elasticsearch:
-        condition: service_healthy
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - curl -s http://localhost:9600/_node/pipelines/main | grep -q '"status":"green"'
-      interval: 10s
-      timeout: 10s
-      retries: 30
-      start_period: 60s
+      - elasticsearch
     networks:
       - mynetwork
 
@@ -210,8 +194,7 @@ services:
       - ${DOCKER_ROOT_DIR:-/var/lib/docker}/containers:/var/lib/docker/containers:ro
       - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
     depends_on:
-      logstash:
-        condition: service_healthy
+      - logstash
     networks:
       - mynetwork
 
