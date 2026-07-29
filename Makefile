@@ -5,6 +5,7 @@ MONITORING_COMPOSE := monitoring/docker-compose.yml
 .PHONY: all check-env create-network up monitoring clean status help
 
 all: check-env create-network up
+	@echo "website is running on http://localhost:1337"
 
 check-env:
 	@echo "🔍 Checking environment configuration files..."
