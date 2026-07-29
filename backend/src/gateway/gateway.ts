@@ -6,13 +6,10 @@ import { BattleService } from 'src/battle/battle.service';
 import { RustboxService } from './RustBox/rustbox.service';
 import { CreateBattleDto } from 'src/battle/dto/create-battle.dto';
 import { JoinBattleDto } from 'src/battle/dto/join-battle.dto';
-import { stderr, stdout } from 'process';
-import { stat } from 'fs';
-// import { GatewayService } from './gateway.service';
 import { RateLimiterMemory } from 'rate-limiter-flexible';
-
 import { REDIS_CLIENT } from 'src/battle/redis/redis.module';
 import Redis from 'ioredis';
+
 
 @WebSocketGateway({ cors: { origin: '*', credentials: true } })
 @UseGuards(AuthGuard)
@@ -36,14 +33,6 @@ export class MyGateway implements OnModuleInit {
   // one timer per running battle, so a battle that runs out of time closes itself
   private closers = new Map<string, NodeJS.Timeout>();
 
-  /**
-   * What each player of a battle is doing, by user id: 'running' while the judge has
-   * their code, then the verdict it came back with, then 'won'.
-   *
-   * codeSubmitted and codeResult only reach whoever happened to be in the room at
-   * that second, so a page that opens late, or a socket that reconnected, knew
-   * nothing about anybody else. Keeping it here is what lets them catch up.
-   */
   private activity = new Map<string, Record<string, string>>();
 
   private setActivity(battleId: string, userId: string, doing: string) {
@@ -91,35 +80,6 @@ export class MyGateway implements OnModuleInit {
     await client.join(battle.bid);
 
     this.lobbyChanged();
-    return battle; // ack
-  }
-
-  /**
-   * Walks a player who is already in a battle back into its room. A creator arrives
-   * over http, and a reload throws the socket away, so without this neither of them
-   * hears another word about their own battle.
-   */
-  @SubscribeMessage('watchBattle')
-  async onWatchBattle(@Session() session: UserSession, @MessageBody() data: { battleId: string }, @ConnectedSocket() client: Socket) {
-    const battle = await this.battleService.getBattleById(data.battleId);
-
-    if (!battle.players.some((p) => p.id === session.user.id)) {
-      throw new WsException('You are not in this battle');
-    }
-
-    await client.join(battle.bid);
-
-    // this is the catching up: what everyone was doing before this page existed
-    client.emit('battle:activity', { battleId: battle.bid, activity: this.activity.get(battle.bid) ?? {} });
-
-    // the process may have been restarted while this one was running, and the timer
-    // that was meant to close it died with it
-    if (battle.status === 'RUNNING' && battle.startedAt) {
-      const endsAt = battle.startedAt.getTime() + battle.durationSeconds * 1000;
-      if (endsAt <= Date.now()) await this.closeOnTime(battle.bid);
-      else this.arm(battle.bid, endsAt - Date.now());
-    }
-
     return battle; // ack
   }
 
@@ -249,15 +209,6 @@ export class MyGateway implements OnModuleInit {
      finally {
       this.inFlight.delete(userId);
     }
-  }
-
-  @SubscribeMessage('getBattlePlayers')
-  async onGetBattlePlayers(@MessageBody() data: { battleId: string }) {
-    const battle = await this.battleService.getBattleById(data.battleId);
-    if (!battle) {
-      return { error: 'Battle not found' };
-    }
-    return battle.players;
   }
 
   @SubscribeMessage('cancelBattle')
