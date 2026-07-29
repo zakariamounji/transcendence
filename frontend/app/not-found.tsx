@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
-export default function NotFound(): null {
+export default function NotFound(): React.JSX.Element {
   return (
     <main className="min-h-screen min-w-full flex justify-center items-center p-4">
       <div className="flex justify-center items-center flex-col w-md text-center">
