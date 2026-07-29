@@ -62,7 +62,7 @@ export default function CurrentBattle({
 
         {battle.status === "RUNNING" && (
           <Link
-            href={`/battles/${battle.bid}`}
+            href={`/c/battle/${battle.bid}`}
             className="btn-brand flex h-9 cursor-pointer items-center gap-1.5 rounded-md px-4 text-[12px] font-medium"
             suppressHydrationWarning
           >
