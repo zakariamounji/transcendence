@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard, Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { UpdateProfileDto } from './dto/updateProfile.dto'
@@ -34,7 +34,7 @@ export class UserController {
     @Post('adminRole')
     updateAdminRole(@Session() session: UserSession, @Body('userId') userId: string) {
         if (session.user.role !== 'ADMIN') {
-            throw new UnauthorizedException("Only admins can update roles");
+            throw new ForbiddenException("Only admins can update roles");
         }
         return this.userService.updateRole(userId, { role: 'ADMIN' });
     }
