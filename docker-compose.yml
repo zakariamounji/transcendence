@@ -13,6 +13,21 @@ services:
     networks:
       - mynetwork
 
+
+  nginx:
+      build:
+        context: ./nginx
+        dockerfile: Dockerfile
+      container_name: nginx
+      ports:
+        - "8443:8443"
+      depends_on:
+        - frontend
+        - backend
+      restart: always
+      networks:
+        - mynetwork
+
   backend:
     build:
       context: ./backend
