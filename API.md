@@ -59,7 +59,6 @@ comparison, so shipping it would hand clients the answer.
 | GET    | `/battles/current`       | The caller's active battle          |
 | GET    | `/battles/:id`           | One battle                          |
 | POST   | `/battles/create`        | Create a battle                     |
-| PATCH  | `/battles/:id/cancel`    | Cancel — **creator only**, `WAITING` |
 
 Create accepts:
 
@@ -74,13 +73,6 @@ Create accepts:
 
 `roomCode` is returned **only** in this create response, to its creator. Every
 other battle read omits it, and the server validates it on join.
-
-## Operations (public)
-
-| Method | Path       | Purpose                                       |
-| ------ | ---------- | --------------------------------------------- |
-| GET    | `/health`  | Liveness, used by the Docker healthcheck       |
-| GET    | `/metrics` | Prometheus metrics — not exposed through nginx |
 
 ## WebSocket
 
@@ -99,7 +91,6 @@ Each emit takes an acknowledgement callback. On failure the ack is
 | `startBattle`      | `{ battleId }`                                   | Creator only                          |
 | `endBattle`        | `{ battleId }`                                   | Creator only, battle must be running  |
 | `submitCode`       | `{ battleId, language, code, stdin? }`           | Member only, battle must be running   |
-| `getBattlePlayers` | `{ battleId }`                                   | Returns the roster                    |
 
 `submitCode` is rate limited per user and allows one in-flight submission at a
 time.
@@ -112,7 +103,6 @@ time.
 | `battle:started`         | `{ battle }`               | Creator starts it                          |
 | `battle:playerWon`       | `{ battleId, userId }`     | A submission produced the expected output   |
 | `battle:ended`           | `{ battle }`               | Battle finished                            |
-| `codeSubmitted`          | `{ userId, language }`     | A player submitted — **source is not sent** |
 | `codeResult`             | `{ userId, result }`       | A verdict came back from the judge          |
 
 `battle:started` and `battle:ended` carry the battle with its players and
