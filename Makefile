@@ -5,7 +5,7 @@ MONITORING_COMPOSE := monitoring/docker-compose.yml
 .PHONY: all check-env create-network up monitoring clean status help
 
 all: check-env create-network up
-	@echo "\n\n\033[32m::: ft_transcendence is running on \033[31mhttps://localhost:8443\033[0m\n\nrun: \033[32mmake clean\033[0m to stop and remove containers and network\n\n"]"
+	@echo "\n\n\033[32m::: ft_transcendence is running on \033[31mhttps://localhost:8443\033[0m\n\nrun: \033[32mmake clean\033[0m to stop and remove containers and network\n"
 
 check-env:
 	@echo "🔍 Checking environment configuration files..."
