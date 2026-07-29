@@ -32,7 +32,8 @@ export function usePresence(): void {
         body,
         keepalive: true
       })
-      .then(() => router.refresh())
+      // .then(() => router.refresh())
+      .then(() => console.log("Presence updated"))
       .catch(() => { sent.current = null })
     }
 
