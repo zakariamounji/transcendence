@@ -23,7 +23,7 @@ services:
     ports:
       - "3005:3000"
     env_file:
-      - .env
+      - ../.env
     volumes:
       - grafana_data:/var/lib/grafana
     networks:
@@ -58,7 +58,7 @@ services:
       image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
       container_name: elasticsearch
       env_file:
-        - .env
+        - ../.env
       environment:
         - node.name=elasticsearch
         - cluster.name=elk-cluster
@@ -78,7 +78,7 @@ services:
     image: docker.elastic.co/logstash/logstash:8.12.0
     container_name: logstash
     env_file:
-      - .env
+      - ../.env
     environment:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - LS_JAVA_OPTS=-Xms256m -Xmx256m
@@ -97,7 +97,7 @@ services:
     ports:
       - "5601:5601"
     env_file:
-      - .env
+      - ../.env
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=kibana_system
@@ -112,7 +112,7 @@ services:
     container_name: filebeat
     user: root
     env_file:
-      - .env
+      - ../.env
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro

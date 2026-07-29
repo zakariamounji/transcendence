@@ -4,15 +4,12 @@ services:
       context: ./db
       dockerfile: Dockerfile
     container_name: db
-    ports:
-      - "5432:5432"
     env_file:
-      - ./db/.env
+      - .env
     volumes:
       - db_data:/var/lib/postgresql/15/main
     networks:
       - mynetwork
-
 
   nginx:
       build:
@@ -33,10 +30,8 @@ services:
       context: ./backend
       dockerfile: dockerfile
     container_name: backend
-    ports:
-      - "3000:3000"
     env_file:
-      - ./backend/.env
+      - .env
     depends_on:
       - db
       - redis
@@ -48,10 +43,10 @@ services:
       context: ./frontend
       dockerfile: dockerfile
     container_name: frontend
-    ports:
-      - "1337:1337"
     env_file:
-      - ./frontend/.env
+      - .env
+    volumes:
+      - public_avatars_data:/app/public/avatars
     depends_on:
       - backend
     networks:
@@ -75,8 +70,8 @@ services:
 volumes:
   db_data:
   redis_data:
+  public_avatars_data:
 
 networks:
   mynetwork:
     external: true
-

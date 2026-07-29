@@ -14,7 +14,14 @@ export const auth = betterAuth({
   emailAndPassword: { enabled: true },
   baseURL: process.env.BETTER_AUTH_URL,
   //ila zdti chi localhost b port wahad khor zido hna bach req twasal
-  trustedOrigins: ["http://localhost:3000", "http://localhost:5500", "http://localhost:8080", "http://localhost:1337", "http://10.14.4.9:1337"],
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://localhost:5500",
+    "http://localhost:8080",
+    "http://localhost:1337",
+    "http://10.14.4.9:1337",
+    "https://localhost:8443"
+  ],
 
   // hadi zdtha bach better auth i includi l role dyal user f session object
   user: {
