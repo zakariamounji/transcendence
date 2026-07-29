@@ -104,6 +104,7 @@ export function useAuth() {
         setIsLoading(null)
       } else {
         router.push("/")
+        router.refresh()
       }
     } catch {
       setErrorMessage("An unexpected error occurred. Please try again.")
@@ -145,6 +146,7 @@ export function useAuth() {
         }
       } else {
         router.push("/")
+        router.refresh()
       }
     } catch {
       setErrorMessage("An unexpected error occurred. Please try again.")
