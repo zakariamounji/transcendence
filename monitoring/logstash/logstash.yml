@@ -1,0 +1,5 @@
+api.http.host: "0.0.0.0"
+
+# There is no separate monitoring cluster here. Left on, the internal monitoring
+# pipeline polls Elasticsearch without credentials and logs a 401 every 30s.
+xpack.monitoring.enabled: false

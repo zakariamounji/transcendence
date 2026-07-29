@@ -1,8 +1,10 @@
 groups:
   - name: transcendence_alerts
     rules:
+      # `postgres == 0` referenced a metric that does not exist, so this alert
+      # could never fire. pg_up is what postgres-exporter actually publishes.
       - alert: DatabaseDown
-        expr: postgres == 0
+        expr: pg_up == 0
         for: 30s
         labels:
           severity: critical
@@ -10,17 +12,25 @@ groups:
           summary: "PostgreSQL Database is DOWN"
           description: "The database container has stopped responding or the exporter cannot reach it."
 
-      - alert: BackendDown
-        expr: up{job="nestjs-backend-local"} == 0
+      - alert: PostgresExporterDown
+        expr: up{job="postgres"} == 0
         for: 30s
         labels:
           severity: critical
         annotations:
-          summary: "NestJS Backend is DOWN"
-          description: "The backend service has crashed or is unreachable."
+          summary: "postgres-exporter is unreachable"
+          description: "Prometheus cannot scrape postgres-exporter, so database health is unknown."
+
+      # BackendDown was removed: the backend exposes no /metrics endpoint, so the
+      # rule fired permanently. Restore it together with the scrape job in
+      # prometheus.yml once the backend is instrumented.
 
       - alert: ContainerHighMemory
-        expr: (container_memory_working_set_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) * 100 > 85
+        # container_spec_memory_limit_bytes is 0 for containers without a memory
+        # limit; without the `> 0` guard the ratio is +Inf and every container alerts.
+        expr: >-
+          (container_memory_working_set_bytes{name!=""}
+            / (container_spec_memory_limit_bytes{name!=""} > 0)) * 100 > 85
         for: 1m
         labels:
           severity: warning
@@ -28,3 +38,11 @@ groups:
           summary: "Container running out of memory"
           description: "Container {{ $labels.name }} is using more than 85% of its memory limit."
 
+      - alert: NodeExporterDown
+        expr: up{job="node"} == 0
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "node-exporter is unreachable"
+          description: "Host-level CPU/memory/disk metrics are no longer being collected."

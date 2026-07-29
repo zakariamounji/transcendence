@@ -2,6 +2,14 @@ NETWORK_NAME := mynetwork
 MAIN_COMPOSE := docker-compose.yml
 MONITORING_COMPOSE := monitoring/docker-compose.yml
 
+# Filebeat needs the host's container-log dir and the Docker socket. Under
+# rootless Docker these are NOT /var/lib/docker and /var/run/docker.sock, so
+# detect them from the running daemon and export them for compose.
+DOCKER_ROOT_DIR := $(shell docker info --format '{{.DockerRootDir}}' 2>/dev/null | sed 's:/*$$::')
+DOCKER_SOCK := $(shell echo "$${DOCKER_HOST:-unix:///var/run/docker.sock}" | sed -e 's|^unix://||' -e 's|^[^/].*$$|/var/run/docker.sock|')
+export DOCKER_ROOT_DIR
+export DOCKER_SOCK
+
 .PHONY: all check-env create-network up monitoring clean status help
 
 all: check-env create-network up
@@ -31,20 +39,25 @@ up: check-env create-network
 
 monitoring: check-env create-network
 	@echo "📊 Starting monitoring stack..."
-	docker compose -f $(MONITORING_COMPOSE) up --build -d
+	@echo "🐳 Docker data dir: $(DOCKER_ROOT_DIR)  socket: $(DOCKER_SOCK)"
+	@if [ ! -r "$(DOCKER_ROOT_DIR)/containers" ]; then \
+		echo "❌ Error: cannot read '$(DOCKER_ROOT_DIR)/containers' — filebeat needs it."; \
+		exit 1; \
+	fi
+	docker compose --env-file .env -f $(MONITORING_COMPOSE) up --build -d
 
 status:
 	@echo "📌 Main App Status:"
 	docker compose ps
 	@echo "\n📌 Monitoring Status:"
 	@if [ -f $(MONITORING_COMPOSE) ]; then \
-		docker compose -f $(MONITORING_COMPOSE) ps; \
+		docker compose --env-file .env -f $(MONITORING_COMPOSE) ps; \
 	fi
 
 clean:
 	@echo "🛑 Stopping all containers..."
 	-docker compose down
-	-docker compose -f $(MONITORING_COMPOSE) down
+	-docker compose --env-file .env -f $(MONITORING_COMPOSE) down
 	@echo "🧹 Removing external network..."
 	-docker network rm $(NETWORK_NAME) 2>/dev/null || true
 

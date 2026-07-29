@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   prometheus:
     build: ./prometheus
@@ -12,6 +10,8 @@ services:
   alertmanager:
     build: ./alertmanager
     container_name: alertmanager
+    env_file:
+      - ../.env
     ports:
       - "9093:9093"
     networks:
@@ -26,6 +26,9 @@ services:
       - ../.env
     volumes:
       - grafana_data:/var/lib/grafana
+      # Without this the provisioned Prometheus datasource and dashboards
+      # never reach Grafana and it starts up empty.
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
     networks:
       - mynetwork
 
@@ -36,44 +39,106 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+      # Without this the diskstats collector cannot read udev properties and
+      # logs "Failed to open directory, disabling udev device properties".
+      - /run/udev:/run/udev:ro
     command:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - mynetwork
+
+  # Per-container CPU/memory metrics — the source for the ContainerHighMemory rule.
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /sys:/sys:ro
+      - ${DOCKER_ROOT_DIR:-/var/lib/docker}:/var/lib/docker:ro
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
+    devices:
+      - /dev/kmsg
     networks:
       - mynetwork
 
   postgres-exporter:
-      image: prometheuscommunity/postgres-exporter:latest
-      container_name: postgres-exporter
-      environment:
-        - DATA_SOURCE_NAME=postgresql://exporter:exporterMinda12%40@db:5432/postgres?sslmode=disable
-      ports:
-        - "9187:9187"
-      networks:
-        - mynetwork
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    env_file:
+      - ../.env
+    environment:
+      # Split into URI/USER/PASS instead of one DSN: the password contains '@',
+      # which has to be percent-encoded inside a connection URL and silently
+      # corrupts it otherwise.
+      - DATA_SOURCE_URI=db:5432/postgres?sslmode=disable
+      - DATA_SOURCE_USER=${EXPORTER_USER}
+      - DATA_SOURCE_PASS=${EXPORTER_PASSWORD}
+    volumes:
+      - ./postgres-exporter/postgres_exporter.yml:/postgres_exporter.yml:ro
+    ports:
+      - "9187:9187"
+    networks:
+      - mynetwork
 
-    
   elasticsearch:
-      image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
-      container_name: elasticsearch
-      env_file:
-        - ../.env
-      environment:
-        - node.name=elasticsearch
-        - cluster.name=elk-cluster
-        - discovery.type=single-node
-        - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-        - xpack.security.enabled=true
-        - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      volumes:
-        - es_data:/usr/share/elasticsearch/data
-        - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-      ports:
-        - "9200:9200"
-      networks:
-        - mynetwork
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    env_file:
+      - ../.env
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=elk-cluster
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.security.enabled=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl -s -u "elastic:$${ELASTIC_PASSWORD}" http://localhost:9200/_cluster/health
+          | grep -qE '"status":"(green|yellow)"'
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 40s
+    networks:
+      - mynetwork
+
+  # One-shot init: the kibana_system built-in user has no usable password until
+  # it is set through the security API. Passing KIBANA_SYSTEM_PASSWORD to Kibana
+  # alone just makes it retry a login Elasticsearch will always reject.
+  es-setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: es-setup
+    env_file:
+      - ../.env
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -e
+        echo "Setting the kibana_system password..."
+        curl -sS -f -u "elastic:$${ELASTIC_PASSWORD}" \
+          -X POST "http://elasticsearch:9200/_security/user/kibana_system/_password" \
+          -H 'Content-Type: application/json' \
+          -d "{\"password\":\"$${KIBANA_SYSTEM_PASSWORD}\"}"
+        echo "kibana_system password set."
+    restart: "no"
+    networks:
+      - mynetwork
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.12.0
@@ -85,28 +150,53 @@ services:
       - LS_JAVA_OPTS=-Xms256m -Xmx256m
     volumes:
       - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      # Turns off the internal monitoring pipeline, which otherwise polls
+      # Elasticsearch unauthenticated and logs a 401 every 30 seconds.
+      - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
     ports:
       - "5044:5044"
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -s http://localhost:9600/_node/pipelines/main | grep -q '"status":"green"'
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
     networks:
       - mynetwork
 
   kibana:
-      image: docker.elastic.co/kibana/kibana:8.12.0
-      container_name: kibana
-      ports:
-        - "5601:5601"
-      env_file:
-        - ../.env
-      environment:
-        - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-        - ELASTICSEARCH_USERNAME=kibana_system
-        - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
-      depends_on:
-        - elasticsearch
-      networks:
-        - mynetwork
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    env_file:
+      - ../.env
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+      # Without persistent keys Kibana generates random ones each boot, which
+      # disables the alerting/actions APIs and drops saved objects on restart.
+      - XPACK_SECURITY_ENCRYPTIONKEY=${KIBANA_SECURITY_ENCRYPTION_KEY}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_SAVED_OBJECTS_ENCRYPTION_KEY}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${KIBANA_REPORTING_ENCRYPTION_KEY}
+    # Passed as a flag rather than an env var: the image lowercases env names,
+    # so it never matches the camelCase setting. The assistant needs a
+    # Platinum/Enterprise licence and otherwise just logs
+    # "Failed to resolve ELSER model definition" on every boot.
+    command:
+      - /usr/local/bin/kibana-docker
+      - --xpack.observabilityAIAssistant.enabled=false
+    depends_on:
+      es-setup:
+        condition: service_completed_successfully
+    networks:
+      - mynetwork
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.12.0
@@ -116,10 +206,12 @@ services:
       - ../.env
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Source paths differ under rootless Docker; the Makefile detects them.
+      - ${DOCKER_ROOT_DIR:-/var/lib/docker}/containers:/var/lib/docker/containers:ro
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
     depends_on:
-      - logstash
+      logstash:
+        condition: service_healthy
     networks:
       - mynetwork
 
@@ -130,4 +222,3 @@ networks:
 volumes:
   grafana_data:
   es_data:
-
