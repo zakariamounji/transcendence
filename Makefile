@@ -9,14 +9,11 @@ all: check-env create-network up
 
 check-env:
 	@echo "🔍 Checking environment configuration files..."
-	@if [ ! -f backend/.env ]; then \
-		echo "❌ Error: backend/.env file is missing!"; \
+	@if [ ! -f .env ]; then \
+		echo "❌ Error: .env file is missing!"; \
 		exit 1; \
 	fi
-	@if [ ! -f frontend/.env ]; then \
-		echo "❌ Error: frontend/.env file is missing!"; \
-		exit 1; \
-	fi
+
 	@echo "✅ All required .env files are present."
 
 create-network:
