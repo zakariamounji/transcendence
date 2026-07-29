@@ -58,9 +58,7 @@ services:
       container_name: redis
       restart: always
       env_file:
-        - ./redis/.env
-      ports:
-        - "6378:6379"
+        - .env
       volumes:
         - redis_data:/data
       networks:

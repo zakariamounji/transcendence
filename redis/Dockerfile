@@ -1,10 +1,15 @@
 FROM redis:7-alpine
 
-# Copy custom configuration file into the container
-COPY redis.conf /usr/local/etc/redis/redis.conf
+# envsubst is not part of the base image; the entrypoint uses it to render
+# redis.conf from the environment.
+RUN apk add --no-cache gettext-envsubst
 
-# Expose the standard Redis port
-EXPOSE 6379
+# Copy the configuration template and the entrypoint that renders it
+COPY redis.conf.template /usr/local/etc/redis/redis.conf.template
+COPY entrypoint.sh /usr/local/bin/redis-entrypoint.sh
+RUN chmod +x /usr/local/bin/redis-entrypoint.sh
 
-# Launch redis-server with the custom config path
-CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]
+# Matches the default REDIS_PORT; the actual port comes from the environment
+EXPOSE 6378
+
+ENTRYPOINT ["/usr/local/bin/redis-entrypoint.sh"]

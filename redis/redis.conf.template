@@ -1,15 +1,19 @@
+# Rendered by entrypoint.sh at container start — ${VAR} placeholders are
+# substituted from the environment (see the redis section of the root .env).
+# Do not edit the generated file; edit this template.
+
 # --- Network Settings ---
 # Listen on all container network interfaces (0.0.0.0)
 bind 0.0.0.0
-port 6378
+port ${REDIS_PORT}
 
 # --- Security ---
-# Require authentication password (or pass via environment variables)
-requirepass your_secure_redis_password
+# Require authentication password
+requirepass ${REDIS_PASSWORD}
 
 # --- Persistence ---
 # Append Only Mode (saves every write operation to disk)
-appendonly yes
+appendonly ${REDIS_APPENDONLY}
 appendfilename "appendonly.aof"
 
 # Save snapshots to disk (RDB)
@@ -19,9 +23,9 @@ save 60 10000
 
 # --- Memory Management ---
 # Max memory limit (e.g., 256 megabytes)
-maxmemory 256mb
+maxmemory ${REDIS_MAXMEMORY}
 # Eviction policy when memory is full (removes least recently used keys with an expiration)
-maxmemory-policy allkeys-lru
+maxmemory-policy ${REDIS_MAXMEMORY_POLICY}
 
 # --- Logging ---
-loglevel notice
+loglevel ${REDIS_LOGLEVEL}
