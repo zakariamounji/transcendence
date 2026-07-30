@@ -2,8 +2,6 @@ services:
   prometheus:
     build: ./prometheus
     container_name: prometheus
-    ports:
-      - "9090:9090"
     networks:
       - mynetwork
 
@@ -12,8 +10,6 @@ services:
     container_name: alertmanager
     env_file:
       - ../.env
-    ports:
-      - "9093:9093"
     networks:
       - mynetwork
 
@@ -21,13 +17,12 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3005:3000"
+      # Bound to localhost only so external networks cannot access it
+      - "127.0.0.1:3005:3000"
     env_file:
       - ../.env
     volumes:
       - grafana_data:/var/lib/grafana
-      # Without this the provisioned Prometheus datasource and dashboards
-      # never reach Grafana and it starts up empty.
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     networks:
       - mynetwork
@@ -39,8 +34,6 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-      # Without this the diskstats collector cannot read udev properties and
-      # logs "Failed to open directory, disabling udev device properties".
       - /run/udev:/run/udev:ro
     command:
       - '--path.procfs=/host/proc'
@@ -50,7 +43,6 @@ services:
     networks:
       - mynetwork
 
-  # Per-container CPU/memory metrics — the source for the ContainerHighMemory rule.
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: cadvisor
@@ -71,16 +63,11 @@ services:
     env_file:
       - ../.env
     environment:
-      # Split into URI/USER/PASS instead of one DSN: the password contains '@',
-      # which has to be percent-encoded inside a connection URL and silently
-      # corrupts it otherwise.
       - DATA_SOURCE_URI=db:5432/postgres?sslmode=disable
       - DATA_SOURCE_USER=${EXPORTER_USER}
       - DATA_SOURCE_PASS=${EXPORTER_PASSWORD}
     volumes:
       - ./postgres-exporter/postgres_exporter.yml:/postgres_exporter.yml:ro
-    ports:
-      - "9187:9187"
     networks:
       - mynetwork
 
@@ -99,14 +86,9 @@ services:
     volumes:
       - es_data:/usr/share/elasticsearch/data
       - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-    ports:
-      - "9200:9200"
     networks:
       - mynetwork
 
-  # One-shot init: the kibana_system built-in user has no usable password until
-  # it is set through the security API. Passing KIBANA_SYSTEM_PASSWORD to Kibana
-  # alone just makes it retry a login Elasticsearch will always reject.
   es-setup:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     container_name: es-setup
@@ -143,11 +125,8 @@ services:
       - LS_JAVA_OPTS=-Xms256m -Xmx256m
     volumes:
       - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
-      # Turns off the internal monitoring pipeline, which otherwise polls
-      # Elasticsearch unauthenticated and logs a 401 every 30 seconds.
       - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-    ports:
-      - "5044:5044"
+    # Note: If external agents send logs to Logstash on port 5044, keep "127.0.0.1:5044:5044" or reverse-proxy it.
     depends_on:
       - elasticsearch
     networks:
@@ -157,22 +136,17 @@ services:
     image: docker.elastic.co/kibana/kibana:8.12.0
     container_name: kibana
     ports:
-      - "5601:5601"
+      # Bound to localhost only
+      - "127.0.0.1:5601:5601"
     env_file:
       - ../.env
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
-      # Without persistent keys Kibana generates random ones each boot, which
-      # disables the alerting/actions APIs and drops saved objects on restart.
       - XPACK_SECURITY_ENCRYPTIONKEY=${KIBANA_SECURITY_ENCRYPTION_KEY}
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_SAVED_OBJECTS_ENCRYPTION_KEY}
       - XPACK_REPORTING_ENCRYPTIONKEY=${KIBANA_REPORTING_ENCRYPTION_KEY}
-    # Passed as a flag rather than an env var: the image lowercases env names,
-    # so it never matches the camelCase setting. The assistant needs a
-    # Platinum/Enterprise licence and otherwise just logs
-    # "Failed to resolve ELSER model definition" on every boot.
     command:
       - /usr/local/bin/kibana-docker
       - --xpack.observabilityAIAssistant.enabled=false
@@ -182,10 +156,6 @@ services:
     networks:
       - mynetwork
 
-  # One-shot init: imports the saved objects (index patterns/dashboards)
-  # exported from Kibana's Stack Management > Saved Objects UI, so a fresh
-  # clone gets the logs view already configured instead of it being
-  # recreated by hand.
   kibana-setup:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     container_name: kibana-setup
@@ -218,17 +188,11 @@ services:
     image: docker.elastic.co/beats/filebeat:8.12.0
     container_name: filebeat
     user: "0:0"
-    # filebeat.yml is bind-mounted from the host, so its owning uid follows
-    # whoever cloned the repo instead of root; --strict.perms=false skips the
-    # ownership check that would otherwise refuse to start. (Setting
-    # strict.perms in the yaml itself doesn't work: Filebeat checks file
-    # ownership before that setting has been parsed.)
     command: ["-e", "--strict.perms=false"]
     env_file:
       - ../.env
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      # Source paths differ under rootless Docker; the Makefile detects them.
       - ${DOCKER_ROOT_DIR:-/var/lib/docker}/containers:/var/lib/docker/containers:ro
       - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
     depends_on:
@@ -243,3 +207,4 @@ networks:
 volumes:
   grafana_data:
   es_data:
+  

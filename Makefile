@@ -48,7 +48,6 @@ monitoring: check-env create-network
 	@echo "\n\033[32m::: Monitoring stack is running! :::\033[0m"
 	@echo "  📈 Grafana:    \033[36mhttp://localhost:3005\033[0m"
 	@echo "  🔍 Kibana:     \033[36mhttp://localhost:5601\033[0m"
-	@echo "  🔥 Prometheus: \033[36mhttp://localhost:9090\033[0m\n"
 
 status:
 	@echo "📌 Main App Status:"
