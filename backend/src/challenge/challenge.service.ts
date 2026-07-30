@@ -45,6 +45,17 @@ export class ChallengeService {
         });
     }
     async updateChallenge(challengeId: string, dto: UpdateChallengeDto) {
+        const challenge = await this.databaseService.challenge.findUnique({
+            where: { cid: challengeId },
+            include: { battles: true },
+        });
+
+        if (!challenge) {
+            throw new NotFoundException('Challenge not found');
+        }
+        if (challenge.battles.length > 0 && dto.isPublished !== challenge.isPublished) {
+            throw new ForbiddenException('Cannot update the publication status of a challenge that has been used in battles');
+        }
         return this.databaseService.challenge.update({
             where: { cid: challengeId },
             data: {

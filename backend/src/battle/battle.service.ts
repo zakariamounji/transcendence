@@ -111,10 +111,12 @@ export class BattleService {
           });
         }
         await tx.battle.delete({ where: { bid: battleId } });
+        await this.redis.del(`battle:${battleId}`); // invalidate cache
         return null;
       }
       // if the battle is still waiting, just return the updated battle
       if (battle.status === BattleStatus.WAITING) {
+        await this.redis.del(`battle:${battleId}`); // invalidate cache
         return updated;
       }
 
