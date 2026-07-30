@@ -218,6 +218,12 @@ services:
     image: docker.elastic.co/beats/filebeat:8.12.0
     container_name: filebeat
     user: "0:0"
+    # filebeat.yml is bind-mounted from the host, so its owning uid follows
+    # whoever cloned the repo instead of root; --strict.perms=false skips the
+    # ownership check that would otherwise refuse to start. (Setting
+    # strict.perms in the yaml itself doesn't work: Filebeat checks file
+    # ownership before that setting has been parsed.)
+    command: ["-e", "--strict.perms=false"]
     env_file:
       - ../.env
     volumes:
