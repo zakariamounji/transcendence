@@ -45,6 +45,10 @@ monitoring: check-env create-network
 		exit 1; \
 	fi
 	docker compose --env-file .env -f $(MONITORING_COMPOSE) up --build -d
+	@echo "\n\033[32m::: Monitoring stack is running! :::\033[0m"
+	@echo "  📈 Grafana:    \033[36mhttp://localhost:3005\033[0m"
+	@echo "  🔍 Kibana:     \033[36mhttp://localhost:5601\033[0m"
+	@echo "  🔥 Prometheus: \033[36mhttp://localhost:9090\033[0m\n"
 
 status:
 	@echo "📌 Main App Status:"
