@@ -19,7 +19,6 @@ export const auth = betterAuth({
     "http://localhost:5500",
     "http://localhost:8080",
     "http://localhost:1337",
-    "http://10.14.4.9:1337",
     "https://localhost:8443"
   ],
 
