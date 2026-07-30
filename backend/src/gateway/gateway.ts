@@ -30,27 +30,31 @@ export class MyGateway implements OnModuleInit {
     });
   }
 
-  // one timer per running battle, so a battle that runs out of time closes itself
+  // track the time outs for each battle, so we can end them when the clock runs out.
   private closers = new Map<string, NodeJS.Timeout>();
-
+  // track what each player is doing, so we can show it to the others in the room.
   private activity = new Map<string, Record<string, string>>();
 
+
+  // activityes : "running", "WA" -> wrong answer, "RE" -> run time error, "won"
   private setActivity(battleId: string, userId: string, doing: string) {
-    const next = { ...(this.activity.get(battleId) ?? {}), [userId]: doing };
+    const next = { ...(this.activity.get(battleId) ?? {}), [userId]: doing }; // return object example: { "user1": "running", "user2": "WA" }
     this.activity.set(battleId, next);
     this.server.to(battleId).emit('battle:activity', { battleId, activity: next });
   }
 
-  // tells every client, in a room or not, that the battle list moved
+  // emit to all clients that a global change has happened (battle created, started, ended, etc). so they can update their UI.
   private lobbyChanged() {
     this.server.emit('lobby:changed');
   }
 
+  // start a timer to end the battle in the future, unless it is disarmed first (by somebody winning it).
   private arm(battleId: string, ms: number) {
-    this.disarm(battleId);
+    this.disarm(battleId); // clear any existing timer, so we don't end it twice.
     this.closers.set(battleId, setTimeout(() => this.closeOnTime(battleId), Math.max(0, ms)));
   }
 
+  // clear the timer for a battle, so it doesn't end automatically.
   private disarm(battleId: string) {
     const timer = this.closers.get(battleId);
     if (timer) {
@@ -72,8 +76,6 @@ export class MyGateway implements OnModuleInit {
     }
   }
 
-  // the creator has to be inside the room too, otherwise nothing that happens in
-  // their own battle ever reaches them
   @SubscribeMessage('createBattle')
   async onCreateBattle(@Session() session: UserSession, @MessageBody() data: CreateBattleDto, @ConnectedSocket() client: Socket) {
     const battle = await this.battleService.createBattle(session.user.id, data);
