@@ -11,9 +11,7 @@ Real-time competitive programming arena. Players write **C** or **C++** in the b
 - [Description](#description)
 - [Team Information](#team-information)
 - [Project Management](#project-management)
-- [Instructions](#instructions)
 - [Technical Stack](#technical-stack)
-- [Architecture](#architecture)
 - [Database Schema](#database-schema)
 - [Features List](#features-list)
 - [Modules](#modules)
@@ -65,10 +63,10 @@ Commits were authored from several machines and Git identities. This maps them t
 
 | 42 login | Git author name(s) |
 | --- | --- |
-| `abdael-m` | `abdallahelmadi`, `Abdallah EL"MADI` |
+| `abdael-m` | `Abdallah EL"MADI` |
 | `abifkirn` | `AimadBifkirn` |
-| `bnafiai` | `Batrii`, `bnafiai` |
-| `zmounji` | `zakaria`, `zakariamounji`, `zakariamounji2`, `zakaria mounji`, `zakariaagadir` |
+| `bnafiai` | `Batrii` |
+| `zmounji` | `zakariamounji`, `zakariamounji2` |
 
 ---
 
@@ -105,8 +103,9 @@ We split the project along the deployment boundary — frontend, backend, and in
 | Docker Engine | 24 or newer, with the Compose v2 plugin (`docker compose`) |
 | GNU Make | any recent version |
 | Free RAM | ~2 GB for the application, ~4 GB more if you also start the monitoring stack (Elasticsearch and Logstash reserve JVM heap) |
-| Free ports | `8443` for the application. Monitoring additionally uses `9090`, `9093`, `3005`, `9200`, `5601`, `9187` |
+| Free ports | `8443` for the application. Monitoring additionally uses `9090`, `3005`, `5601` |
 | Google Chrome | latest stable (the reference browser for this project) |
+| Firefox | latest stable |
 
 Node.js is **not** required on the host — everything builds inside containers.
 
@@ -160,10 +159,10 @@ make monitoring
 | Service | URL | Credentials |
 | --- | --- | --- |
 | Grafana | http://localhost:3005 | `GF_SECURITY_ADMIN_USER` / `GF_SECURITY_ADMIN_PASSWORD` |
-| Prometheus | http://localhost:9090 | — |
-| Alertmanager | http://localhost:9093 | — |
 | Kibana | http://localhost:5601 | `elastic` / `ELASTIC_PASSWORD` |
-| Elasticsearch | http://localhost:9200 | `elastic` / `ELASTIC_PASSWORD` |
+| Prometheus | — | — |
+| Alertmanager | — | — |
+| Elasticsearch | — | — |
 
 The Grafana datasource and the *Transcendence Overview* dashboard are provisioned automatically.
 
@@ -225,54 +224,6 @@ make help         # list available targets
 | **nginx** | TLS termination and the single entry point: it is the only container that publishes a port. It routes `/socket.io/` and the API prefixes to the backend and everything else to Next.js, so the browser only ever talks HTTPS to one origin. |
 | **Prometheus, Grafana, Alertmanager, node-exporter, cAdvisor, postgres-exporter** | Metrics collection, dashboards, and alert routing for the host, the containers, and the database. |
 | **Elasticsearch, Logstash, Kibana, Filebeat** | Centralized log collection from every container, with JSON log parsing and searchable daily indices. |
-
----
-
-## Architecture
-
-```mermaid
-flowchart TB
-    Browser["Browser (Chrome)"]
-
-    subgraph docker["Docker network: mynetwork"]
-        Nginx["nginx :8443<br/>TLS termination"]
-        Front["frontend :1337<br/>Next.js 16 (SSR + RSC)"]
-        Back["backend :3000<br/>NestJS 11 + Socket.IO"]
-        DB[("PostgreSQL 17")]
-        Cache[("Redis 7")]
-
-        subgraph obs["Observability (make monitoring)"]
-            Prom["Prometheus"]
-            Graf["Grafana"]
-            Alert["Alertmanager"]
-            Exp["node-exporter<br/>cAdvisor<br/>postgres-exporter"]
-            Beat["Filebeat"]
-            LS["Logstash"]
-            ES[("Elasticsearch")]
-            Kib["Kibana"]
-        end
-    end
-
-    Judge["Rustbox sandbox<br/>(external judge)"]
-    OAuth["Google / GitHub / 42"]
-
-    Browser -- HTTPS --> Nginx
-    Browser -- WSS --> Nginx
-    Nginx --> Front
-    Nginx --> Back
-    Front -- "SSR fetch (server-side)" --> Back
-    Back --> DB
-    Back --> Cache
-    Back -- "run submission" --> Judge
-    Back -- OAuth 2.0 --> OAuth
-
-    Exp --> Prom
-    Prom --> Graf
-    Prom --> Alert
-    Beat --> LS --> ES --> Kib
-```
-
-**Request paths.** The browser reaches only nginx over HTTPS. Server-side rendering calls the backend directly over the internal network (`INTERNAL_BACKEND_URL`), forwarding the session cookie, so no protected data is fetched from the client on first load. All gameplay after that flows over a single authenticated WebSocket.
 
 ---
 
@@ -395,9 +346,9 @@ erDiagram
 | --- | --- | --- |
 | **Email + password authentication** | Sign up and sign in with hashed, salted credentials. Validated on the client (format, length) and on the server. | `bnafiai` (backend), `abdael-m` (UI, validation, error mapping) |
 | **OAuth 2.0 sign-in** | Google, GitHub, and 42. The 42 provider is a custom generic-OAuth configuration that reads the intra API for profile, email, and avatar. | `bnafiai` |
-| **Session handling** | Cookie-based sessions, read server-side during SSR and forwarded to the backend; sign-out flips the player to `OFFLINE` through a pre-hook before the session is destroyed. | `bnafiai` (hooks), `abdael-m` (SSR session layer) |
-| **Profile page** | Avatar (with generated initials fallback), name, email, role and status badges, global rank, level with an XP progress bar, and six statistic tiles (battles, wins, losses, win rate, played, created). | `abdael-m` (UI), `bnafiai` (data + XP model) |
-| **Presence system** | Online / offline / in-battle. The browser reports visibility changes, and uses `sendBeacon` on page hide so a closing tab is still recorded as offline. `IN_BATTLE` can only be set by the battle engine, never by a client. | `abdael-m` (client), `bnafiai` (endpoint + guard) |
+| **Session handling** | Cookie-based sessions, read server-side during SSR and forwarded to the backend; sign-out flips the player to `OFFLINE` through a pre-hook before the session is destroyed. | `abifkirn` (hooks), `abdael-m` (SSR session layer) |
+| **Profile page** | Avatar (with generated initials fallback), name, email, role and status badges, global rank, level with an XP progress bar, and six statistic tiles (battles, wins, losses, win rate, played, created). | `abdael-m` (UI), `abifkirn` (data + XP model) |
+| **Presence system** | Online / offline / in-battle. The browser reports visibility changes, and uses `sendBeacon` on page hide so a closing tab is still recorded as offline. `IN_BATTLE` can only be set by the battle engine, never by a client. | `abdael-m` (client), `abifkirn` (endpoint + guard) |
 | **Challenge creation** | Full form: title, slug, statement, standard input, expected output, difficulty, language, XP reward, time limit. Validated client-side and again server-side by DTO, with a unique-slug conflict check inside a transaction. | `bnafiai` (backend), `abdael-m` (form) |
 | **Challenge management** | Edit and delete your own challenges. Deletion is refused for challenges already used in a battle, and published challenges can only be removed by an admin. | `bnafiai` (rules), `abdael-m` (UI) |
 | **Challenge publication** | Unpublished challenges are visible only to their author and to admins; publishing is an admin action. | `bnafiai`, `abdael-m` |
@@ -406,32 +357,32 @@ erDiagram
 | **Battle lifecycle** | Waiting → running → completed / cancelled, entirely server-side. Joining, leaving, starting, and cancelling all reconcile player presence; cancelling releases every participant; leaving a running battle counts as a loss. | `abifkirn` |
 | **Server-side clock** | Each running battle arms a server timer for its duration. If it expires the battle closes with no winner and every client is told. The browser only renders a countdown derived from `startedAt`. | `abifkirn` (server), `abdael-m` (countdown) |
 | **Code editor** | Custom in-browser editor: a transparent textarea layered over a syntax-highlighted `pre`, single-pass tokenizer for C/C++ comments, preprocessor directives, strings, keywords and numbers, synchronized scrolling, tab insertion, and a per-language starter template. No editor library. | `abdael-m` |
-| **Sandboxed judging** | A submission is compiled and executed in an isolated sandbox with the challenge's standard input, and returns a verdict, stdout, stderr, exit code, and failure cause. Verdicts are normalized into readable outcomes. | `abifkirn` |
+| **Sandboxed judging** | A submission is compiled and executed in an isolated sandbox with the challenge's standard input, and returns a verdict, stdout, stderr, exit code, and failure cause. Verdicts are normalized into readable outcomes. | `bnafiai` |
 | **First-solver-wins resolution** | On an accepted run the server compares stdout against the expected output; a match disarms the battle timer, ends the battle, awards XP to the winner, records a loss for everyone else, and releases all presence locks — atomically enough that the clock cannot end a battle that was already won. | `abifkirn` |
 | **Submission abuse protection** | Five submissions per player per minute, plus a single-in-flight guard so one player cannot queue parallel runs against the judge. | `abifkirn` |
 | **Live battle activity** | Every player in a battle sees what the others are doing in real time — running, wrong answer, crashed, did not compile, too slow, won — without ever seeing their code. | `abifkirn` (broadcast), `abdael-m` (UI) |
 | **Reconnection handling** | The client shows a live/reconnecting indicator, resynchronizes on reconnect, and re-reads state on a timer whenever the tab is visible, so a dropped connection never leaves a stale arena. | `abdael-m` |
 | **XP and level progression** | A win grants the challenge's XP reward (6 by default); 100 XP is one level. Wins, losses, and challenges played are counted. Persisted in PostgreSQL. | `bnafiai` |
-| **Global leaderboard** | Every player ranked by level, then experience, then wins. Search by name, filter by presence status, paginated ten per page, with podium highlighting and your own row pinned visually. | `bnafiai` (ranking query), `abdael-m` (board) |
+| **Global leaderboard** | Every player ranked by level, then experience, then wins. Search by name, filter by presence status, paginated ten per page, with podium highlighting and your own row pinned visually. | `abifkirn` (ranking query), `abdael-m` (board) |
 | **Roles and admin actions** | `USER` / `ADMIN`. Admins see unpublished challenges, can delete any challenge, publish challenges, and promote another player to admin from the leaderboard. The role travels inside the session, and clients cannot set their own role or status. | `bnafiai` (backend), `abdael-m` (admin UI) |
 | **Design system** | Custom `oklch` token palette (brand, three surface levels, three border levels, two muted text levels), custom utilities for panels, hover lift, gradient buttons, gradient text and pulse glow, a `Geist Mono` type scale, a single icon set, and ~20 reusable components. | `abdael-m` |
 | **Privacy Policy and Terms of Service** | Full pages written for this project — what is collected, authentication providers, code submissions, retention, rights, conduct rules, and the judge's execution limits. Reachable from the authentication screen. | `abdael-m` |
 | **Consistent API envelope** | A global interceptor wraps every REST response as `{ statusCode, message, data }`, and the socket client unwraps it, so the frontend has one response shape to handle. | `abifkirn` |
 | **Server-side validation** | A global validation pipe validates every DTO: enums, UUIDs, string lengths, integer bounds, optional fields. | `bnafiai`, `abifkirn` |
-| **Redis caching** | Battle records are cached for five minutes and explicitly invalidated on every mutation (join, leave, start, end, cancel). | `abifkirn` |
+| **Redis caching** | Battle records are cached for five minutes and explicitly invalidated on every mutation (join, leave, start, end, cancel). | `bnafiai` |
 | **HTTPS everywhere** | nginx terminates TLS 1.2/1.3 with HTTP/2 on the single published port and proxies both HTTP and WebSocket upstreams. Nothing else is exposed. | `zmounji` |
 | **Single-command deployment** | `make` validates the environment file, creates the shared network, and builds and starts every service. Migrations run automatically on backend start. | `zmounji`, `abdael-m` |
 | **Database provisioning** | On first boot the PostgreSQL image creates the application role and database, transfers ownership, and creates a superuser role dedicated to the metrics exporter, all idempotently. | `zmounji` |
 | **Redis provisioning** | The configuration is rendered from a template at container start, refusing to boot without a password, with AOF + RDB persistence, a memory ceiling, and LRU eviction. | `zmounji` |
-| **Metrics and dashboards** | Prometheus scrapes host metrics (node-exporter), per-container metrics (cAdvisor), and database metrics (postgres-exporter). Grafana is provisioned with its datasource and a *Transcendence Overview* dashboard. Anonymous access is disabled. | `zmounji`, `abdael-m` |
-| **Alerting** | Prometheus alert rules for database down, exporter unreachable, container memory above 85%, and node-exporter down, routed through Alertmanager with optional SMTP delivery and a null receiver fallback. | `zmounji`, `abdael-m` |
-| **Centralized logging** | Filebeat ships every container's logs to Logstash, which decodes JSON payloads into a namespaced field and writes daily Elasticsearch indices; Kibana provides search. Elasticsearch security is enabled and the `kibana_system` password is provisioned by a one-shot init container. | `zmounji`, `abdael-m` |
+| **Metrics and dashboards** | Prometheus scrapes host metrics (node-exporter), per-container metrics (cAdvisor), and database metrics (postgres-exporter). Grafana is provisioned with its datasource and a *Transcendence Overview* dashboard. Anonymous access is disabled. | `zmounji` |
+| **Alerting** | Prometheus alert rules for database down, exporter unreachable, and node-exporter down, routed through Alertmanager with optional SMTP delivery and a null receiver fallback. | `zmounji` |
+| **Centralized logging** | Filebeat ships every container's logs to Logstash, which decodes JSON payloads into a namespaced field and writes daily Elasticsearch indices; Kibana provides search. Elasticsearch security is enabled and the `kibana_system` password is provisioned by a one-shot init container. | `zmounji` |
 
 ---
 
 ## Modules
 
-**Points required: 14. Points claimed: 23** (8 Major × 2 = 16, 7 Minor × 1 = 7).
+**Points required: 14. Points claimed: 21** (7 Major × 2 = 14, 7 Minor × 1 = 7).
 
 We aimed well above the minimum on purpose, so that the project still clears 14 points even if some modules are not validated during evaluation.
 
@@ -440,20 +391,19 @@ We aimed well above the minimum on purpose, so that the project still clears 14 
 | # | Category | Module | Type | Pts | How it is implemented | Owner(s) |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Web | Use a framework for both frontend and backend | Major | 2 | **Next.js 16** (App Router, React Server Components) on the frontend and **NestJS 11** on the backend. Both are used as frameworks, not as libraries: file-based routing, server rendering and server actions on one side; modules, dependency injection, guards, pipes, interceptors and a WebSocket gateway on the other. | `abdael-m`, `bnafiai`, `abifkirn` |
-| 2 | Web | Real-time features using WebSockets | Major | 2 | A **Socket.IO** gateway guarded by the auth layer. Socket.IO rooms scope broadcasts to a single battle; a global `lobby:changed` event keeps every connected client's battle list fresh. Events cover players joining and leaving, battle start, submission started, verdict, player won, battle ended, cancelled, and live per-player activity. Disconnections are handled gracefully: the client exposes a live/reconnecting indicator, resynchronizes on reconnect, and falls back to visibility-gated polling. Broadcasting is efficient — code is never echoed to the room, only the fact that a player submitted and the resulting verdict. | `abifkirn`, `abdael-m` |
+| 2 | Web | Real-time features using WebSockets | Major | 2 | A **Socket.IO** gateway guarded by the auth layer. Socket.IO rooms scope broadcasts to a single battle; a global `lobby:changed` event keeps every connected client's battle list fresh. Events cover players joining and leaving, battle start, submission started, verdict, player won, battle ended, cancelled, and live per-player activity. Disconnections are handled gracefully: the client exposes a live/reconnecting indicator, resynchronizes on reconnect, and falls back to visibility-gated polling. Broadcasting is efficient — code is never echoed to the room, only the fact that a player submitted and the resulting verdict. | `abifkirn`, `abdael-m`, `bnafiai` |
 | 3 | Web | Use an ORM for the database | Minor | 1 | **Prisma 7** with the `@prisma/adapter-pg` driver adapter over a `pg` pool. One schema file generates the client; 11 committed migrations are applied automatically by the backend container on start. Interactive transactions are used for every race-sensitive write. | `bnafiai`, `abifkirn` |
 | 4 | Web | Server-Side Rendering | Minor | 1 | Every page is a React Server Component. The home dashboard fetches profile, challenges, battles, and ranking on the server in parallel; the arena page loads and authorizes the battle server-side before rendering. A `serverFetch` helper forwards the session cookie to the backend over the internal Docker network, so protected data is rendered into the first response instead of being fetched from the browser. | `abdael-m` |
 | 5 | Web | Custom-made design system with reusable components | Minor | 1 | A complete token layer in `oklch`: brand ramp (violet / pink / cyan), three surface levels, three border levels, two muted text levels, chart colours, and a radius scale. Six custom Tailwind utilities carry the visual identity (`panel-sheen`, `card-lift`, `btn-brand`, `fill-brand`, `text-gradient`, `dot-glow`, plus a keyframed glow animation), with themed selection colours and scrollbars. Typography is a `Geist Mono` scale; icons are a single set (Hugeicons). ~20 reusable components — `Button`, `Dialog`, `Input`, `Label`, `Select`, `Textarea`, `Avatar`, `Badge`, `Stat`, `Panel`, `StatusPill`, `Fact`, `Players`/`Player`, `Countdown`, `Rank`, `Cell`, `Editor`, `ChallengeCard`, `BattleCard`, `Grid` — well past the 10 required. | `abdael-m` |
-| 6 | Web | Advanced search with filters, sorting and pagination | Minor | 1 | The leaderboard combines all four: live substring search by player name, a status filter (everyone / online / in battle / offline), multi-key server-side sorting (level, then experience, then wins), and pagination at ten rows per page with a range indicator and previous/next controls. Search and filter reset pagination so the view never lands on an empty page. | `abdael-m`, `bnafiai` |
-| 7 | User Management | Remote authentication with OAuth 2.0 | Minor | 1 | Three providers through **better-auth**: Google and GitHub as built-in social providers, and **42** as a custom `genericOAuth` configuration against the intra authorize/token endpoints with a bespoke `getUserInfo` that maps display name, email, and avatar from `/v2/me`. Multiple providers can be linked to one user through the `account` table, and remote avatars are whitelisted per host in the image configuration. | `bnafiai` |
-| 8 | Gaming and UX | Complete web-based game where users play against each other | Major | 2 | **Code Battle** itself. Clear rules: everyone in a battle receives the same problem, the same standard input, and the same clock; you must print exactly the expected output; the first player whose output matches wins and the battle ends immediately for everyone; if the clock expires first, nobody wins. Live matches are played in the arena — problem statement, editor, verdict panel, live opponent activity, and countdown. Win and loss conditions are resolved server-side and written to the database. | `abifkirn`, `abdael-m` |
-| 9 | Gaming and UX | Remote players | Major | 2 | Two (or more) players on separate machines play the same battle in real time over a single authenticated WebSocket through nginx. Latency and disconnection are handled explicitly: a live/reconnecting indicator driven by the socket's own connection state, full state resynchronization on reconnect, visibility-gated polling as a safety net, an 8-second acknowledgement timeout on actions and 45 seconds for judging, and server-side authority so a client that misses events still converges on the correct state. Gameplay never trusts client timing — the clock is a server timer. | `abifkirn`, `abdael-m` |
-| 10 | Gaming and UX | Multiplayer game (more than two players) | Major | 2 | `GROUP` mode supports up to 8 simultaneous players in one battle. Fairness is structural: all players get the identical challenge, identical standard input, and one shared clock started by the host for everyone at once. Synchronization is by Socket.IO room — a single broadcast reaches every participant with player list changes, activity updates, and the terminal result. Capacity is enforced server-side from the mode, and the winner is whoever the server accepts first, so the outcome does not depend on which client rendered fastest. | `abifkirn`, `abdael-m` |
-| 11 | Gaming and UX | Gamification system | Minor | 1 | Four of the listed mechanics, all persisted in PostgreSQL: an **XP/level system** (a win grants the challenge's XP reward, 100 XP per level, with carry-over), **leaderboards** (global ranking by level → experience → wins), **rewards** (per-challenge configurable XP reward, 1–100), and **badges** (admin, presence, and podium badges). Visual feedback throughout: an animated level progress bar, live verdict pills, podium medals on the top three, and win/loss notices. Rules are explicit in the UI. | `bnafiai`, `abdael-m` |
-| 12 | DevOps | Log management infrastructure with ELK | Major | 2 | **Filebeat** (container input, Docker metadata processor) ships every container's stdout to **Logstash**, which detects JSON payloads and decodes them into a namespaced `app` field so application keys cannot collide with ECS fields, tags the environment, and writes into daily **Elasticsearch** indices (`logs-YYYY.MM.dd`). **Kibana** provides search and dashboards. Access is secured: `xpack.security` is enabled, the `elastic` password comes from the environment, and a one-shot init container provisions the `kibana_system` password through the security API before Kibana starts. Kibana's three encryption keys are pinned so saved objects and alerting survive restarts. Health-gated `depends_on` ordering means the pipeline never starts against an unready Elasticsearch. | `zmounji`, `abdael-m` |
-| 13 | DevOps | Monitoring system with Prometheus and Grafana | Major | 2 | **Prometheus** scrapes three exporters — **node-exporter** (host CPU, memory, disk), **cAdvisor** (per-container CPU and memory), and **postgres-exporter** (database health and connections, using a dedicated PostgreSQL role created at provisioning time). **Grafana** is provisioned as code: the datasource and a custom *Transcendence Overview* dashboard (services up, PostgreSQL up, host CPU %, host memory %, request rate, active connections) ship in the repository. Alerting is a full path: four Prometheus rules (database down, exporter unreachable, container above 85% of its memory limit, node-exporter down) routed to **Alertmanager**, which delivers by SMTP when credentials are present and falls back to a null receiver otherwise. Grafana access is secured with admin credentials and anonymous access disabled. | `zmounji`, `abdael-m` |
-| 14 | Modules of choice | **Real-time competitive judge pipeline** | Major | 2 | See the justification below. | `abifkirn` |
-| 15 | Modules of choice | **Redis caching and invalidation layer** | Minor | 1 | See the justification below. | `abifkirn`, `zmounji` |
+| 6 | Web | Advanced search with filters, sorting and pagination | Minor | 1 | The leaderboard combines all four: live substring search by player name, a status filter (everyone / online / in battle / offline), multi-key server-side sorting (level, then experience, then wins), and pagination at ten rows per page with a range indicator and previous/next controls. Search and filter reset pagination so the view never lands on an empty page. | `abdael-m`, `abifkirn` |
+| 7 | User Management | Remote authentication with OAuth 2.0 | Minor | 1 | Three providers through **better-auth**: Google and GitHub as built-in social providers, and **42** as a custom `genericOAuth` configuration against the intra authorize/token endpoints with a bespoke `getUserInfo` that maps display name, email, and avatar from `/v2/me`. Multiple providers can be linked to one user through the `account` table, and remote avatars are whitelisted per host in the image configuration. | `bnafiai`, `abifkirn` |
+| 8 | Gaming and UX | Complete web-based game where users play against each other | Major | 2 | **Code Battle** itself. Clear rules: everyone in a battle receives the same problem, the same standard input, and the same clock; you must print exactly the expected output; the first player whose output matches wins and the battle ends immediately for everyone; if the clock expires first, nobody wins. Live matches are played in the arena — problem statement, editor, verdict panel, live opponent activity, and countdown. Win and loss conditions are resolved server-side and written to the database. | `abifkirn`, `abdael-m`, `bnafiai` |
+| 9 | Gaming and UX | Multiplayer game (more than two players) | Major | 2 | `GROUP` mode supports up to 8 simultaneous players in one battle. Fairness is structural: all players get the identical challenge, identical standard input, and one shared clock started by the host for everyone at once. Synchronization is by Socket.IO room — a single broadcast reaches every participant with player list changes, activity updates, and the terminal result. Capacity is enforced server-side from the mode, and the winner is whoever the server accepts first, so the outcome does not depend on which client rendered fastest. | `abifkirn`, `abdael-m`, `bnafiai` |
+| 10 | Gaming and UX | Gamification system | Minor | 1 | Four of the listed mechanics, all persisted in PostgreSQL: an **XP/level system** (a win grants the challenge's XP reward, 100 XP per level, with carry-over), **leaderboards** (global ranking by level → experience → wins), **rewards** (per-challenge configurable XP reward, 1–100), and **badges** (admin, presence, and podium badges). Visual feedback throughout: an animated level progress bar, live verdict pills, podium medals on the top three, and win/loss notices. Rules are explicit in the UI. | `bnafiai`, `abdael-m`, `abifkirn` |
+| 11 | DevOps | Log management infrastructure with ELK | Major | 2 | **Filebeat** (container input, Docker metadata processor) ships every container's stdout to **Logstash**, which detects JSON payloads and decodes them into a namespaced `app` field so application keys cannot collide with ECS fields, tags the environment, and writes into daily **Elasticsearch** indices (`logs-YYYY.MM.dd`). **Kibana** provides search and dashboards. Access is secured: `xpack.security` is enabled, the `elastic` password comes from the environment, and a one-shot init container provisions the `kibana_system` password through the security API before Kibana starts. Kibana's three encryption keys are pinned so saved objects and alerting survive restarts. Health-gated `depends_on` ordering means the pipeline never starts against an unready Elasticsearch. | `zmounji` |
+| 12 | DevOps | Monitoring system with Prometheus and Grafana | Major | 2 | **Prometheus** scrapes three exporters — **node-exporter** (host CPU, memory, disk), **cAdvisor** (per-container CPU and memory), and **postgres-exporter** (database health and connections, using a dedicated PostgreSQL role created at provisioning time). **Grafana** is provisioned as code: the datasource and a custom *Transcendence Overview* dashboard (services up, PostgreSQL up, host CPU %, host memory %, request rate, active connections) ship in the repository. Alerting is a full path: four Prometheus rules (database down, exporter unreachable, node-exporter down) routed to **Alertmanager**, which delivers by SMTP when credentials are present and falls back to a null receiver otherwise. Grafana access is secured with admin credentials and anonymous access disabled. | `zmounji` |
+| 13 | Modules of choice | **Real-time competitive judge pipeline** | Major | 2 | See the justification below. | `abifkirn` |
+| 14 | Modules of choice | **Redis caching and invalidation layer** | Minor | 1 | See the justification below. | `bnafiai`, `zmounji` |
 
 ### Why these modules
 
@@ -488,22 +438,6 @@ The module set was chosen after the product idea was settled, not before, and ev
 
 **How it adds value and why Minor.** It removes the dominant read load from the database on the project's hottest path. It is deliberately claimed as a Minor: the scope is one cached entity with one invalidation strategy — real engineering, but not the breadth of a Major.
 
-### Not claimed
-
-Modules that exist only partially in the codebase. We list them so the evaluation is not misled, and because the subject is explicit that incomplete modules score zero:
-
-| Module | Type | State | What is missing |
-| --- | --- | --- | --- |
-| User Management — Standard user management and authentication | Major | Partial | Profile editing, profile page, default avatar, and online status all work, but **avatar upload was removed** and there is **no friends system**. Two of four required bullets are absent. |
-| User Management — Advanced permissions system | Major | Partial | Roles, role management, and role-dependent views and actions all work. Missing the **delete** half of user CRUD. |
-| User Management — Game statistics and match history | Minor | Partial | Statistics, leaderboard integration, and level progression are implemented; there is **no match-history view** (past battles with dates, results, and opponents). |
-| Web — Public API with API key | Major | Partial | REST endpoints and rate limiting exist, but there is **no API key mechanism** and the API documentation is not in the repository. |
-| Web — File upload and management | Minor | Removed | The avatar upload route was removed during integration; the client helper that calls it is dead code. |
-| Gaming — Game customization options | Minor | Partial | Battle settings (mode, visibility, duration) and challenge settings (difficulty, language, time limit, XP reward) are customizable with defaults, but there are no maps, themes, or power-ups. |
-| DevOps — Health check and status page | Minor | Partial | Container health checks exist for Elasticsearch and Logstash. There is no status page, no automated backups, and no documented disaster recovery procedure. |
-
-Not started at all: chat and friends, notifications, PWA, accessibility compliance (WCAG 2.1 AA), internationalization and RTL, additional-browser support, 2FA, organizations, any Artificial Intelligence module, WAF/ModSecurity and Vault, a second game, 3D graphics, tournaments, spectator mode, backend as microservices, the Data and Analytics modules, and Blockchain.
-
 ---
 
 ## Individual Contributions
@@ -525,26 +459,20 @@ Not started at all: chat and friends, notifications, PWA, accessibility complian
 - The complete design system: token palette, custom utilities, type scale, and ~20 reusable components.
 - The Privacy Policy and Terms of Service pages, written for this project.
 
-**Challenges faced.** An infinite redirect loop between the authentication page and the home page, caused by route-protection middleware racing the session cookie; resolved by moving the redirect decision into the server components that already read the session, and retiring the middleware. Separately, the presence hook fed itself: a failed status report on the authentication page would refresh the route, which re-ran the hook, which reported again. Fixed by persisting the last reported status in `sessionStorage` — surviving full reloads, which a React ref does not — and clearing it only when the endpoint rejects, so the real `ONLINE` still goes out once a session exists.
-
 ### `bnafiai` — Backend Developer
 
 - **Prisma schema and migrations.** Modeled users, challenges, battles, and the auth tables; expressed the domain states as PostgreSQL enums; and authored the migration chain (including narrowing supported languages to C and C++ and moving to one language per challenge).
 - **Authentication.** Integrated better-auth into NestJS: email/password, Google and GitHub, and the **42 provider** as a custom generic-OAuth configuration with a bespoke `getUserInfo` against the intra API. Surfaced `role` and `status` as session fields with client input disabled, so authorization checks read the session instead of querying the database. Wrote the auth hooks: a pre-sign-out hook that reads the signed session cookie *before* the session is destroyed in order to record the user as offline, and a post-OAuth hook that grants admin to the team's 42 accounts.
 - **User module.** Profile reads and updates, presence updates with a guard preventing a client from claiming `IN_BATTLE` directly, role promotion restricted to admins, the ranking query (level → experience → wins), and the XP model — reward accumulation, level carry-over at 100 XP, and win/loss/played counters.
+- **Redis caching layer** for battle reads, with explicit invalidation on every mutation.
 - **Challenge module.** Full CRUD with the ownership and permission rules: authors edit their own challenges, published challenges can only be deleted by an admin, and a challenge already used in a battle cannot be deleted at all. Unique-slug conflict detection and the author's challenge counter are handled inside one transaction. DTO validation with enum, length, and bound constraints for both create and update.
-
-**Challenges faced.** Recording a user as offline on sign-out was not possible from an after-hook, because better-auth has already destroyed the session by then — the user id is simply gone. The fix was a before-hook that reads the signed session token from the cookie and resolves the session through the internal adapter while it still exists.
 
 ### `abifkirn` — Backend Developer
 
 - **Battle module.** The entire lifecycle — create, join, leave, start, end, cancel — with transactional integrity throughout. Creating a battle takes a lock by conditionally updating the creator's status only if they are not already in a battle, so two racing requests cannot put one player in two battles. Leaving reconciles presence, records a loss when a running battle is abandoned, and deletes a battle that has been emptied. Cancelling releases every participant's presence lock, which had previously left players permanently stuck as `IN_BATTLE` and unable to join anything again. Room-code generation and validation for private battles, and capacity derived server-side from the mode.
 - **Socket.IO gateway.** Every real-time event, guarded by the auth layer: room joining on create and join, player-list broadcasts, battle start, submission notification, verdict delivery, player-won, battle-ended, cancellation, and live per-player activity. Per-battle server timers that close a battle when its clock expires, armed on start and disarmed the moment somebody wins. Membership checks on the destructive events — ending a battle used to be possible for anyone who knew its id.
 - **Judge pipeline.** Sandbox integration with verdict, stdout, stderr, exit code and cause normalization; timeout and sandbox-rate-limit handling; injection of the challenge's standard input rather than the client's; server-side output adjudication; and the full first-solver-wins resolution path. Submission protection: a per-user token bucket of five per minute plus a single-in-flight guard.
-- **Redis caching layer** for battle reads, with explicit invalidation on every mutation.
 - **Cross-cutting concerns.** The global response interceptor that gives every REST endpoint the same `{ statusCode, message, data }` envelope, the HTTP rate-limit middleware, and a timing interceptor for challenge-route latency logging.
-
-**Challenges faced.** The hardest part was the interaction between the battle clock and a winning submission: both end the battle, and both could fire in the same instant, producing a battle completed twice or a winner overwritten by a timeout. Resolved by making the timer cancellable and disarming it before the terminal write, with the state transition itself guarded so a battle that is no longer running cannot be ended again. A second issue was rate limiting: limiting per socket connection was trivially bypassed by opening a second tab, so both the token bucket and the in-flight guard are keyed on the authenticated user id.
 
 ### `zmounji` — Product Owner, DevOps Developer
 
@@ -559,8 +487,6 @@ Not started at all: chat and friends, notifications, PWA, accessibility complian
 - **Monitoring stack**: Prometheus with three exporters, provisioned Grafana datasource and custom dashboard, alert rules, and Alertmanager with SMTP delivery.
 - **Logging stack**: Filebeat, Logstash, Elasticsearch, and Kibana with security enabled.
 
-**Challenges faced.** Several of them were the monitoring stack lying to us. Alert rules referenced metrics that do not exist, so they could never fire — `postgres == 0` instead of `pg_up`; and the container-memory rule divided by `container_spec_memory_limit_bytes`, which is `0` for containers without a memory limit, making the ratio infinite and alerting on everything. The Logstash filter keyed on a field Filebeat never sets, so JSON logs were stored as raw text and were unsearchable. Kibana could not authenticate at all, because the built-in `kibana_system` user has no usable password until it is set through the security API — passing it as an environment variable only made Kibana retry a login Elasticsearch would always reject; a one-shot init container gated on Elasticsearch's health now sets it. Under rootless Docker, Filebeat and cAdvisor could not find the container log directory or the Docker socket at their conventional paths, so the Makefile now detects both from the running daemon and exports them to Compose.
-
 ---
 
 ## Known Limitations
@@ -572,12 +498,9 @@ Stated honestly, since the subject asks for it:
 - **No avatar upload.** Avatars come from OAuth providers, with generated initials as the fallback. The upload route was removed during integration and its client helper is dead code.
 - **No chat and no friends system.** The schema reserves space for both (commented out) but neither is implemented.
 - **The backend exposes no `/metrics` endpoint.** Its Prometheus scrape job is deliberately disabled, since a permanently-down target kept an alert firing; the dashboard's request-rate panel is therefore empty. Host, container, and database metrics all work.
-- **No Elasticsearch ILM policy.** Logs are written to daily indices but never rolled over, aged out, or archived, so disk use grows unbounded over a long deployment.
 - **Self-signed TLS certificate.** Chrome warns on first visit. Appropriate for a local evaluation deployment, not for production.
 - **Battle timers live in process memory.** A backend restart loses the in-flight countdowns of running battles; those battles would need to be ended manually.
 - **Single-language judging.** Only C and C++.
-- **Accessibility is partial.** There is ARIA labelling, semantic markup, progressbar roles and visible focus, but the interface has not been audited against WCAG 2.1 AA and we do not claim that module.
-- **Chrome only.** Other browsers are untested, per the subject's baseline requirement.
 
 ---
 
