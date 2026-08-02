@@ -11,9 +11,9 @@ import { Countdown, Players, StatusPill, verdictLook } from "@/components/battle
 import { cn } from "@/lib/utils"
 
 const difficultyStyle: Record<Challenge["difficulty"], string> = {
-  EASY: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
-  MEDIUM: "border-amber-500/30 bg-amber-500/10 text-amber-400",
-  HARD: "border-red-500/30 bg-red-500/10 text-red-400"
+  EASY: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  MEDIUM: "border-amber-200 bg-amber-50 text-amber-700",
+  HARD: "border-red-200 bg-red-50 text-red-700"
 }
 
 const template: Record<Challenge["language"], string> = {
@@ -54,14 +54,14 @@ function Outcome({ battle, viewerId }: { battle: Battle, viewerId: string }): Re
   return (
     <div className={cn(
       "flex flex-wrap items-center justify-between gap-3 rounded-xl border p-5",
-      won ? "border-emerald-500/30 bg-emerald-500/10" : "border-line bg-surface-1"
+      won ? "border-emerald-200 bg-emerald-50" : "border-line bg-surface-1"
     )}>
       <div className="flex items-center gap-3">
         <HugeiconsIcon
           icon={ChampionIcon}
           size={22}
           strokeWidth={1.8}
-          className={won ? "text-emerald-400" : "text-dim"}
+          className={won ? "text-emerald-600" : "text-dim"}
         />
         <div>
           <p className="font-medium"> Battle over </p>
@@ -124,7 +124,7 @@ export default function Arena({
 
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-2 text-[11px] text-dim">
-              <span className={cn("size-2 rounded-full", live ? "bg-emerald-400 text-emerald-400 dot-glow" : "bg-faint")} />
+              <span className={cn("size-2 rounded-full", live ? "bg-status-success text-status-success dot-glow" : "bg-faint")} />
               {live ? "Live" : "Reconnecting"}
             </span>
 
@@ -232,7 +232,7 @@ export default function Arena({
                   {(result.stderr || result.error_message || result.cause) && (
                     <>
                       <p className="mt-3 text-[10px] tracking-wide text-dim uppercase"> What went wrong </p>
-                      <pre className="mt-1 max-h-40 overflow-auto rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-[12px] text-red-400">
+                      <pre className="mt-1 max-h-40 overflow-auto rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] text-red-700">
                         {result.stderr || result.error_message || result.cause}
                       </pre>
                     </>

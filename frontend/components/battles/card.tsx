@@ -62,8 +62,8 @@ export default function BattleCard({
             maxLength={6}
             placeholder="CODE"
             aria-label="Room code"
-            className="h-9 w-24 border-line bg-transparent text-center font-mono text-[12px]
-            tracking-widest hover:border-line-strong dark:bg-transparent"
+            className="h-9 w-24 border-line bg-surface-2 text-center font-mono text-[12px]
+            tracking-widest hover:border-line-strong"
           />
         )}
 

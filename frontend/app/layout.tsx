@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("dark", "h-full", "antialiased", "text-[14px]", GeistMono.className)}
+      className={cn("h-full", "antialiased", "text-[14px]", GeistMono.className)}
     >
       <body className="min-h-full flex flex-col">
         {children}

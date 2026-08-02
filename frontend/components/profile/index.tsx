@@ -34,14 +34,16 @@ function Badge({
 function Stat({
   label,
   value,
-  tone
+  tone,
+  accent
 }: {
   label: string
   value: string | number
   tone?: string
+  accent?: string
 }): React.JSX.Element {
   return (
-    <div className="card-lift rounded-lg border border-line-soft bg-surface-2 px-4 py-3">
+    <div className={cn("card-lift rounded-lg border bg-surface-2 px-4 py-3", accent ?? "border-line-soft")}>
       <p className="text-[10px] tracking-wide text-dim uppercase"> {label} </p>
       <p className={cn("mt-1 text-lg font-medium tabular-nums", tone)}> {value} </p>
     </div>
@@ -114,7 +116,7 @@ export default async function Profile(): Promise<React.JSX.Element> {
           <div
             className={cn(
               "fill-brand h-full rounded-full transition-[width] duration-500",
-              "shadow-[0_0_12px_-2px_var(--brand-pink)]"
+              "shadow-[0_0_12px_-2px_var(--brand-amber)]"
             )}
             style={{ width: `${levelProgress}%` }}
           />
@@ -122,12 +124,12 @@ export default async function Profile(): Promise<React.JSX.Element> {
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat label="Battles" value={battles} />
-        <Stat label="Wins" value={profile.wins} tone="text-emerald-400" />
-        <Stat label="Losses" value={profile.losses} tone="text-red-400" />
+        <Stat label="Battles" value={battles} tone="text-brand-bright" accent="border-brand/40" />
+        <Stat label="Wins" value={profile.wins} tone="text-status-success" accent="border-status-success/30" />
+        <Stat label="Losses" value={profile.losses} tone="text-status-danger" accent="border-status-danger/30" />
         <Stat label="Win rate" value={`${winRate}%`} tone="text-brand-bright" />
-        <Stat label="Played" value={profile.totalChallengesPlayed} tone="text-brand-cyan" />
-        <Stat label="Created" value={profile.totalChallengesCreated} tone="text-brand-pink-bright" />
+        <Stat label="Played" value={profile.totalChallengesPlayed} tone="text-brand-amber" />
+        <Stat label="Created" value={profile.totalChallengesCreated} tone="text-brand-amber-bright" />
       </div>
 
     </section>

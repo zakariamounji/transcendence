@@ -11,9 +11,9 @@ import BattleForm from "@/components/battles/form"
 import { cn } from "@/lib/utils"
 
 const difficultyStyle: Record<Challenge["difficulty"], string> = {
-  EASY: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
-  MEDIUM: "border-amber-500/30 bg-amber-500/10 text-amber-400",
-  HARD: "border-red-500/30 bg-red-500/10 text-red-400"
+  EASY: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  MEDIUM: "border-amber-200 bg-amber-50 text-amber-700",
+  HARD: "border-red-200 bg-red-50 text-red-700"
 }
 
 const actionClassName = "h-9 flex-1 cursor-pointer border border-line bg-surface-3 text-[12px] text-foreground transition-colors hover:border-brand/50 hover:bg-surface-3/80"
@@ -86,11 +86,11 @@ export default function ChallengeCard({
       </dl>
 
       {!challenge.isPublished && (
-        <p className="mt-3 text-[11px] text-amber-400"> Not published yet </p>
+        <p className="mt-3 text-[11px] text-amber-600"> Not published yet </p>
       )}
 
       {error && (
-        <p role="alert" className="mt-3 text-[11px] text-red-500"> {error} </p>
+        <p role="alert" className="mt-3 text-[11px] text-red-600"> {error} </p>
       )}
 
       {(challenge.isPublished || canEdit || canDelete || canPublish) && (
@@ -113,7 +113,7 @@ export default function ChallengeCard({
                 type="button"
                 onClick={() => run("delete", { method: "DELETE" })}
                 disabled={pending === "delete"}
-                className="h-9 cursor-pointer border border-red-500/30 bg-red-500/10 px-3 text-[12px] text-red-400 hover:bg-red-500/20 disabled:opacity-100"
+                className="h-9 cursor-pointer border border-red-200 bg-red-50 px-3 text-[12px] text-red-700 hover:bg-red-100 disabled:opacity-100"
               >
                 {pending === "delete" ? (
                   <HugeiconsIcon icon={Loading03Icon} size={16} strokeWidth={1.8} className="animate-spin" />
@@ -159,7 +159,7 @@ export default function ChallengeCard({
                   type="button"
                   onClick={() => setAskDelete(true)}
                   aria-label="Delete challenge"
-                  className="size-9 shrink-0 cursor-pointer border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                  className="size-9 shrink-0 cursor-pointer border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
                 >
                   <HugeiconsIcon icon={Delete02Icon} size={16} strokeWidth={1.8} />
                 </Button>

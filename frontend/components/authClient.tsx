@@ -16,8 +16,8 @@ const providers = [
 ] as const
 
 const inputClassName = "border border-line h-12 rounded-md p-4 w-full hover:border-line-strong " +
-  "bg-transparent dark:bg-transparent " +
-  "disabled:bg-transparent dark:disabled:bg-transparent disabled:border-line disabled:opacity-50"
+  "bg-surface-2 " +
+  "disabled:bg-surface-2 disabled:border-line disabled:opacity-50"
 
 function Spinner(): React.JSX.Element {
   return (
@@ -138,7 +138,7 @@ export default function AuthClient(): React.JSX.Element {
         </form>
 
         {errorMessage && (
-          <p id="auth-error" role="alert" className="text-red-500 text-sm mt-2.5"> {errorMessage} </p>
+          <p id="auth-error" role="alert" className="text-red-600 text-sm mt-2.5"> {errorMessage} </p>
         )}
 
         <span className="w-full h-px bg-line mt-6 mb-2"/>

@@ -7,10 +7,10 @@ import { ChampionIcon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 
 const statusStyle: Record<Battle["status"], string> = {
-  WAITING: "border-sky-500/30 bg-sky-500/10 text-sky-400",
-  RUNNING: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+  WAITING: "border-sky-200 bg-sky-50 text-sky-700",
+  RUNNING: "border-emerald-200 bg-emerald-50 text-emerald-700",
   COMPLETED: "border-line bg-surface-3 text-dim",
-  CANCELLED: "border-red-500/30 bg-red-500/10 text-red-400"
+  CANCELLED: "border-red-200 bg-red-50 text-red-700"
 }
 
 const statusLabel: Record<Battle["status"], string> = {
@@ -72,18 +72,18 @@ const verdictWord: Record<string, string> = {
 }
 
 const verdictTone: Record<string, string> = {
-  running: "text-amber-400",
-  won: "text-emerald-400",
-  AC: "text-emerald-400",
-  TLE: "text-amber-400",
-  RATE_LIMITED: "text-amber-400",
+  running: "text-amber-600",
+  won: "text-emerald-600",
+  AC: "text-emerald-600",
+  TLE: "text-amber-600",
+  RATE_LIMITED: "text-amber-600",
   EMPTY: "text-faint"
 }
 
 function verdictLook(verdict: string): { word: string, tone: string } {
   return {
     word: verdictWord[verdict] ?? verdict.toLowerCase(),
-    tone: verdictTone[verdict] ?? "text-red-400"
+    tone: verdictTone[verdict] ?? "text-red-600"
   }
 }
 
@@ -127,7 +127,7 @@ function Player({
       <span className="max-w-32 truncate text-[12px]"> {player.name} </span>
 
       {isWinner && (
-        <HugeiconsIcon icon={ChampionIcon} size={14} strokeWidth={1.8} className="text-amber-400" />
+        <HugeiconsIcon icon={ChampionIcon} size={14} strokeWidth={1.8} className="text-amber-600" />
       )}
 
       {look ? (

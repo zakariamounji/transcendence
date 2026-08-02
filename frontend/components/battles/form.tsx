@@ -20,7 +20,7 @@ import { FlashIcon, Loading03Icon } from "@hugeicons/core-free-icons"
 import { announceBattleChange, emitBattle } from "@/lib/socket"
 import { cn } from "@/lib/utils"
 
-const fieldClassName = "border-line bg-transparent hover:border-line-strong dark:bg-transparent"
+const fieldClassName = "border-line bg-surface-2 hover:border-line-strong"
 
 const MODES: { value: Battle["mode"], label: string }[] = [
   { value: "SOLO", label: "Solo — 1 player" },
@@ -168,7 +168,7 @@ export default function BattleForm({
           </div>
 
           {error && (
-            <p role="alert" className="text-[12px] text-red-500"> {error} </p>
+            <p role="alert" className="text-[12px] text-red-600"> {error} </p>
           )}
 
           <div className="flex justify-end gap-2 pt-1">

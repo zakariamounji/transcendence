@@ -22,11 +22,11 @@ const TOKENS = new RegExp([
 ].join("|"), "gm")
 
 const TONE = [
-  "text-faint",   // comments
-  "text-fuchsia-400", // preprocessor
-  "text-emerald-400", // strings
-  "text-sky-400",     // keywords
-  "text-amber-300"    // numbers
+  "text-faint",             // comments
+  "text-fuchsia-700",       // preprocessor
+  "text-emerald-700",       // strings
+  "text-sky-700",           // keywords
+  "text-brand-amber-bright" // numbers
 ]
 
 // both layers have to lay the text out identically, down to the wrapping

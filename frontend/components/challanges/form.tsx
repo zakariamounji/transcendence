@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils"
 const DIFFICULTIES: Challenge["difficulty"][] = ["EASY", "MEDIUM", "HARD"]
 const LANGUAGES: Challenge["language"][] = ["C", "CPP"]
 
-const fieldClassName = "border-line bg-transparent hover:border-line-strong dark:bg-transparent"
+const fieldClassName = "border-line bg-surface-2 hover:border-line-strong"
 
 function slugify(title: string): string {
   return title
@@ -137,8 +137,10 @@ export default function ChallengeForm({ challenge }: { challenge?: Challenge }):
         render={
           <Button
             className={cn(
-              "cursor-pointer border border-line bg-surface-3 text-foreground transition-colors hover:border-brand/50 hover:bg-surface-3/80",
-              isEdit ? "h-9 flex-1 text-[12px]" : "h-10 px-4 text-[13px]"
+              "cursor-pointer transition-colors",
+              isEdit
+                ? "h-9 flex-1 border border-line bg-surface-3 text-[12px] text-foreground hover:border-brand/50 hover:bg-surface-3/80"
+                : "h-10 bg-brand-orange px-4 text-[13px] text-white hover:bg-brand-orange-hover"
             )}
           />
         }
@@ -289,7 +291,7 @@ export default function ChallengeForm({ challenge }: { challenge?: Challenge }):
           </div>
 
           {error && (
-            <p role="alert" className="text-[12px] text-red-500"> {error} </p>
+            <p role="alert" className="text-[12px] text-red-600"> {error} </p>
           )}
 
           <div className="flex justify-end gap-2 pt-1">

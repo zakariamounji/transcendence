@@ -3,6 +3,8 @@ import type { Battle } from "@/interfaces"
 import { useBattles } from "@/hooks/useBattles"
 import BattleCard from "@/components/battles/card"
 import CurrentBattle from "@/components/battles/current"
+import SectionIcon from "@/components/section-icon"
+import { FlashIcon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 
 export default function BattleBoard({
@@ -30,27 +32,30 @@ export default function BattleBoard({
   ))
 
   return (
-    <section className="mt-4 w-full panel-sheen rounded-xl border border-line bg-surface-1 p-5 sm:p-8">
+    <section id="battles" className="mt-4 w-full scroll-mt-20 panel-sheen rounded-xl border border-line bg-surface-1 p-5 sm:p-8">
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-gradient w-fit text-lg font-medium"> Battles </h2>
-          <p className="mt-0.5 text-[12px] text-dim">
-            {waiting} waiting, {running} running
-          </p>
+        <div className="flex items-center gap-3">
+          <SectionIcon icon={FlashIcon} tone="amber" />
+          <div>
+            <h2 className="text-gradient w-fit text-lg font-medium"> Battles </h2>
+            <p className="mt-0.5 text-[12px] text-dim">
+              {waiting} waiting, {running} running
+            </p>
+          </div>
         </div>
 
         <span className="flex items-center gap-2 text-[11px] text-dim">
           <span className={cn(
             "size-2 rounded-full",
-            live ? "bg-emerald-400 text-emerald-400 dot-glow" : "bg-faint"
+            live ? "bg-status-success text-status-success dot-glow" : "bg-faint"
           )} />
           {live ? "Live" : "Reconnecting"}
         </span>
       </div>
 
       {error && (
-        <p role="alert" className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-400">
+        <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">
           {error}
         </p>
       )}

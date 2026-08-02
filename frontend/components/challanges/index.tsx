@@ -4,6 +4,8 @@ import { getProfile } from "@/lib/profile"
 import { getCurrentBattle } from "@/lib/battles-server"
 import ChallengeCard from "@/components/challanges/card"
 import ChallengeForm from "@/components/challanges/form"
+import SectionIcon from "@/components/section-icon"
+import { SourceCodeIcon } from "@hugeicons/core-free-icons"
 
 async function readChallenges(response: Response): Promise<Challenge[]> {
   if (!response.ok) {
@@ -72,14 +74,17 @@ export default async function Challanges(): Promise<React.JSX.Element> {
   ))
 
   return (
-    <section className="mt-4 w-full panel-sheen rounded-xl border border-line bg-surface-1 p-5 sm:p-8">
+    <section id="challenges" className="mt-4 w-full scroll-mt-20 panel-sheen rounded-xl border border-line bg-surface-1 p-5 sm:p-8">
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-gradient w-fit text-lg font-medium"> My challenges </h2>
-          <p className="mt-0.5 text-[12px] text-dim">
-            {mine.length} created, {mine.filter((challenge) => challenge.isPublished).length} published
-          </p>
+        <div className="flex items-center gap-3">
+          <SectionIcon icon={SourceCodeIcon} tone="brand" />
+          <div>
+            <h2 className="text-gradient w-fit text-lg font-medium"> My challenges </h2>
+            <p className="mt-0.5 text-[12px] text-dim">
+              {mine.length} created, {mine.filter((challenge) => challenge.isPublished).length} published
+            </p>
+          </div>
         </div>
 
         <ChallengeForm />

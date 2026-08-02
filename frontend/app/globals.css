@@ -10,9 +10,13 @@
 
   --color-brand: var(--brand);
   --color-brand-bright: var(--brand-bright);
-  --color-brand-pink: var(--brand-pink);
-  --color-brand-pink-bright: var(--brand-pink-bright);
-  --color-brand-cyan: var(--brand-cyan);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-orange-hover: var(--brand-orange-hover);
+  --color-brand-orange-bright: var(--brand-orange-bright);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-amber-bright: var(--brand-amber-bright);
+  --color-status-success: var(--status-success);
+  --color-status-danger: var(--status-danger);
 
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
@@ -66,59 +70,70 @@
 }
 
 :root {
-  --brand: oklch(0.598 0.238 296);
-  --brand-bright: oklch(0.752 0.165 300);
-  --brand-pink: oklch(0.618 0.24 350);
-  --brand-pink-bright: oklch(0.742 0.178 352);
-  --brand-cyan: oklch(0.78 0.135 200);
+  /* Primary Brand Color (Orange) / Accent-XP Color (Amber) */
+  --brand-orange: #FF6B00;
+  --brand-orange-hover: #E05E00;
+  --brand-orange-bright: #C2410C;
+  --brand-amber: #D97706;
+  --brand-amber-bright: #92400E;
 
-  --background: oklch(0.146 0.021 287);
-  --foreground: oklch(0.968 0.008 287);
+  /* legacy aliases so every existing text-brand / border-brand / btn-brand / fill-brand
+     utility repaints orange without touching each call site */
+  --brand: var(--brand-orange);
+  --brand-bright: var(--brand-orange-bright);
 
-  --surface-1: oklch(0.191 0.024 288);
-  --surface-2: oklch(0.228 0.027 288);
-  --surface-3: oklch(0.268 0.032 289);
+  --status-success: #10B981;
+  --status-danger: #EF4444;
 
-  --line-soft: oklch(0.285 0.031 289);
-  --line: oklch(0.335 0.04 290);
-  --line-strong: oklch(0.487 0.075 293);
+  --background: #F8FAFC;
+  --foreground: #0F172A;
 
-  --dim: oklch(0.74 0.029 288);
-  --faint: oklch(0.588 0.031 288);
+  --surface-1: #FFFFFF;
+  --surface-2: #F1F5F9;
+  --surface-3: #E2E8F0;
+
+  --line-soft: #EEF2F6;
+  --line: #E2E8F0;
+  --line-strong: #CBD5E1;
+
+  --dim: #64748B;
+  --faint: #94A3B8;
 
   --card: var(--surface-1);
   --card-foreground: var(--foreground);
   --popover: var(--surface-1);
   --popover-foreground: var(--foreground);
   --primary: var(--brand);
-  --primary-foreground: oklch(0.99 0 0);
+  --primary-foreground: #FFFFFF;
   --secondary: var(--surface-3);
   --secondary-foreground: var(--foreground);
   --muted: var(--surface-2);
   --muted-foreground: var(--dim);
-  --accent: oklch(0.32 0.075 296);
-  --accent-foreground: oklch(0.98 0.01 296);
-  --destructive: oklch(0.68 0.203 22);
+  --accent: color-mix(in oklch, var(--brand-orange) 12%, var(--surface-3) 88%);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(0.577 0.245 27.325);
   --border: var(--line);
   --input: var(--line);
   --ring: var(--brand-bright);
 
-  --chart-1: var(--brand);
-  --chart-2: var(--brand-pink);
-  --chart-3: var(--brand-cyan);
-  --chart-4: oklch(0.72 0.17 60);
-  --chart-5: oklch(0.7 0.16 150);
+  --chart-1: var(--brand-orange);
+  --chart-2: var(--brand-amber);
+  --chart-3: var(--brand-orange-bright);
+  --chart-4: oklch(0.6 0.15 60);
+  --chart-5: oklch(0.55 0.14 150);
 
   --radius: 0.625rem;
 
   --sidebar: var(--surface-1);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--brand);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: var(--surface-3);
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--line);
   --sidebar-ring: var(--brand-bright);
+
+  color-scheme: light;
 }
 
 @layer base {
@@ -127,29 +142,23 @@
   }
   html {
     @apply font-sans;
-    color-scheme: dark;
   }
   body {
     @apply text-foreground;
     background-color: var(--background);
     background-image:
-      radial-gradient(60rem 40rem at 8% -10%, oklch(0.598 0.238 296 / 0.22), transparent 60%),
-      radial-gradient(50rem 36rem at 96% 4%, oklch(0.618 0.24 350 / 0.16), transparent 62%),
-      radial-gradient(46rem 34rem at 50% 108%, oklch(0.78 0.135 200 / 0.1), transparent 60%);
+      radial-gradient(60rem 40rem at 8% -10%, color-mix(in oklch, var(--brand-orange) 9%, transparent), transparent 60%),
+      radial-gradient(50rem 36rem at 96% 4%, color-mix(in oklch, var(--brand-amber) 7%, transparent), transparent 62%),
+      radial-gradient(46rem 34rem at 50% 108%, color-mix(in oklch, var(--brand-orange-bright) 5%, transparent), transparent 60%);
     background-attachment: fixed;
     background-repeat: no-repeat;
   }
 }
 
 @utility panel-sheen {
-  background-image: linear-gradient(
-    180deg,
-    oklch(1 0 0 / 0.04) 0%,
-    oklch(1 0 0 / 0) 45%
-  );
   box-shadow:
-    0 1px 0 0 oklch(1 0 0 / 0.05) inset,
-    0 18px 40px -24px oklch(0.146 0.021 287 / 0.9);
+    0 1px 2px 0 color-mix(in oklch, var(--foreground) 5%, transparent),
+    0 1px 3px 0 color-mix(in oklch, var(--foreground) 6%, transparent);
 }
 
 @utility card-lift {
@@ -166,30 +175,29 @@
 }
 
 @utility btn-brand {
-  background-image: linear-gradient(135deg, var(--brand) 0%, var(--brand-pink) 100%);
-  color: oklch(0.99 0 0);
+  background-image: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-amber) 100%);
+  color: #FFFFFF;
   border-color: transparent;
-  box-shadow: 0 8px 22px -12px color-mix(in oklch, var(--brand-pink) 85%, transparent);
+  box-shadow: 0 8px 22px -12px color-mix(in oklch, var(--brand-orange) 85%, transparent);
   transition:
     filter 160ms ease,
     box-shadow 160ms ease;
 
   &:hover {
     filter: brightness(1.1) saturate(1.05);
-    box-shadow: 0 12px 28px -10px color-mix(in oklch, var(--brand-pink) 90%, transparent);
+    box-shadow: 0 12px 28px -10px color-mix(in oklch, var(--brand-amber) 90%, transparent);
   }
 }
 
 @utility fill-brand {
-  background-image: linear-gradient(90deg, var(--brand) 0%, var(--brand-pink) 100%);
+  background-image: linear-gradient(90deg, var(--brand-orange) 0%, var(--brand-amber) 100%);
 }
 
 @utility text-gradient {
   background-image: linear-gradient(
     100deg,
-    var(--brand-bright) 0%,
-    var(--brand-pink-bright) 55%,
-    var(--brand-cyan) 100%
+    var(--brand-orange-bright) 0%,
+    var(--brand-amber) 100%
   );
   background-clip: text;
   color: transparent;

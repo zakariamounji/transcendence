@@ -98,7 +98,7 @@ export default function CurrentBattle({
             onClick={() => onCancel(battle.bid)}
             disabled={pending !== null}
             className={cn(
-              "h-9 cursor-pointer border border-red-500/30 bg-red-500/10 px-4 text-[12px] text-red-400 hover:bg-red-500/20",
+              "h-9 cursor-pointer border border-red-200 bg-red-50 px-4 text-[12px] text-red-700 hover:bg-red-100",
               pending !== null && "cursor-not-allowed opacity-50"
             )}
           >

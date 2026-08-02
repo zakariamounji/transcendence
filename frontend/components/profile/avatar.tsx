@@ -3,8 +3,8 @@ import type { ProfileInfo } from "@/interfaces"
 import { cn } from "@/lib/utils"
 
 const statusMeta: Record<ProfileInfo["status"], { label: string, dot: string }> = {
-  ONLINE: { label: "Online", dot: "bg-emerald-500" },
-  IN_BATTLE: { label: "In battle", dot: "bg-amber-500" },
+  ONLINE: { label: "Online", dot: "bg-status-success" },
+  IN_BATTLE: { label: "In battle", dot: "bg-brand-amber" },
   OFFLINE: { label: "Offline", dot: "bg-faint" }
 }
 

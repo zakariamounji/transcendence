@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { statusMeta } from "@/components/profile/avatar"
+import SectionIcon from "@/components/section-icon"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Loading03Icon, UserShield01Icon } from "@hugeicons/core-free-icons"
+import { Loading03Icon, Trophy, UserShield01Icon } from "@hugeicons/core-free-icons"
 import { promoteToAdmin } from "@/lib/admin"
 import { cn } from "@/lib/utils"
 
@@ -41,9 +42,9 @@ function Cell({ children, className }: { children: React.ReactNode, className?: 
 }
 
 const podium: Record<number, string> = {
-  1: "border-amber-400/40 bg-amber-400/15 text-amber-300",
-  2: "border-slate-300/40 bg-slate-300/15 text-slate-200",
-  3: "border-orange-400/40 bg-orange-400/15 text-orange-300"
+  1: "border-[#F59E0B]/40 bg-[#F59E0B]/15 text-brand-amber-bright",
+  2: "border-slate-300 bg-slate-100 text-slate-600",
+  3: "border-brand/40 bg-brand/15 text-brand-bright"
 }
 
 function Rank({ rank }: { rank: number }): React.JSX.Element {
@@ -115,14 +116,17 @@ export default function RankingBoard({
   const rows = found.slice((current - 1) * PER_PAGE, current * PER_PAGE)
 
   return (
-    <section className="mt-4 w-full panel-sheen rounded-xl border border-line bg-surface-1 p-5 sm:p-8">
+    <section id="ranking" className="mt-4 w-full scroll-mt-20 panel-sheen rounded-xl border border-line bg-surface-1 p-5 sm:p-8">
 
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-gradient w-fit text-lg font-medium"> Ranking </h2>
-          <p className="mt-0.5 text-[12px] text-dim">
-            {profiles.length} players, by level then experience then wins
-          </p>
+        <div className="flex items-center gap-3">
+          <SectionIcon icon={Trophy} tone="rust" />
+          <div>
+            <h2 className="text-gradient w-fit text-lg font-medium"> Ranking </h2>
+            <p className="mt-0.5 text-[12px] text-dim">
+              {profiles.length} players, by level then experience then wins
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -134,7 +138,7 @@ export default function RankingBoard({
             }}
             placeholder="Search a player"
             aria-label="Search a player"
-            className="h-9 w-44 border-line bg-transparent text-[12px] hover:border-line-strong dark:bg-transparent"
+            className="h-9 w-44 border-line bg-surface-2 text-[12px] text-foreground hover:border-line-strong"
           />
 
           <Select
@@ -146,7 +150,7 @@ export default function RankingBoard({
           >
             <SelectTrigger
               aria-label="Filter by status"
-              className="h-9 w-36 border-line bg-transparent text-[12px] hover:border-line-strong dark:bg-transparent"
+              className="h-9 w-36 border-line bg-surface-2 text-[12px] text-foreground hover:border-line-strong"
             >
               <SelectValue />
             </SelectTrigger>
@@ -160,7 +164,7 @@ export default function RankingBoard({
       </div>
 
       {problem && (
-        <p className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-400">
+        <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-700">
           {problem}
         </p>
       )}
@@ -171,7 +175,7 @@ export default function RankingBoard({
         <div className="mt-4 overflow-x-auto rounded-lg border border-line-soft">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-line-soft bg-surface-2/80 text-left">
+              <tr className="border-b border-line-soft bg-background text-left">
                 {(canPromote ? [...HEADS, "Role"] : HEADS).map((head) => (
                   <th
                     key={head}
@@ -192,7 +196,7 @@ export default function RankingBoard({
                   <tr
                     key={profile.id}
                     className={cn(
-                      "border-b border-line-soft transition-colors last:border-0 hover:bg-surface-2/60",
+                      "border-b border-line-soft transition-colors last:border-0 hover:bg-background",
                       // your own row is the one you came to find
                       profile.id === viewerId &&
                         "bg-brand/10 hover:bg-brand/15 ring-1 ring-inset ring-brand/25"
@@ -233,8 +237,8 @@ export default function RankingBoard({
                     </Cell>
 
                     <Cell className="font-medium tabular-nums text-brand-bright"> {profile.level}.{profile.exp % 100} </Cell>
-                    <Cell className="tabular-nums text-emerald-400"> {profile.wins} </Cell>
-                    <Cell className="tabular-nums text-red-400/80"> {profile.losses} </Cell>
+                    <Cell className="tabular-nums text-status-success"> {profile.wins} </Cell>
+                    <Cell className="tabular-nums text-status-danger"> {profile.losses} </Cell>
                     <Cell className="tabular-nums text-dim"> {winRate}% </Cell>
 
                     <Cell>
